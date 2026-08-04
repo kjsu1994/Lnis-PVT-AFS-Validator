@@ -11,5 +11,6 @@
     <Compile Remove="Tests\**" />
     <EmbeddedResource Remove="Tests\**" />
     <None Remove="Tests\**" />
+    <None Remove="README.md" />
   </ItemGroup>
 </Project>

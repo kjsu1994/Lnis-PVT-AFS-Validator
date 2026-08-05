@@ -11,6 +11,7 @@ namespace LnisAfsValidator.App;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    public GnssCaptureViewModel GnssCapture { get; } = new();
     private CancellationTokenSource? cancellation;
     private string state = "Idle", verdict = "-", error = "", runDirectory = "";
     private double progress;

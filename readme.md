@@ -25,7 +25,7 @@
 
 ### 1.1 현재 구현 상태
 
-현재 코드는 최종 구조 전체가 아니라 다음 파일 기반 AFS 시험 경로를 먼저 검증하는 프로토타입이다.
+현재 코드는 최종 구조 전체가 아니라 다음 두 개의 독립 프로토타입 경로를 구현한 상태다.
 
 ```text
 LANS-AFS-SIM
@@ -36,7 +36,16 @@ LANS-AFS-SIM
 → 신호 획득·SB2 복호·PVT 위치/시간 판정
 ```
 
-현재 TCP 파일 전송은 HDTN/BPv7 또는 Wi-Fi UDP 브로드캐스트를 구현한 것이 아니다. 공통 `GnssRawEnvelope`, 기준 PVT, HDTN/BPv7, AFS 사용자 정의 메시지, RAW Fragment, UDP I/Q 전송 및 RAW 3자 비교는 이 문서에서 정의하는 목표 설계이며 이후 구현 대상이다.
+```text
+ZED-F9P 또는 .ubx 파일
+→ 읽기 전용 UBX 스트림 수집
+→ RXM-RAWX / RXM-SFRBX checksum 검사·파싱
+→ GPS·Galileo GnssRawEnvelope 정규화
+→ 결정적 LGRW binary + CRC32 저장
+→ 원본 capture.ubx 및 SHA-256 manifest 저장
+```
+
+현재 TCP 파일 전송은 HDTN/BPv7 또는 Wi-Fi UDP 브로드캐스트를 구현한 것이 아니다. `GnssRawEnvelope`와 UBX 수집·직렬화는 구현됐지만 기준 PVT, HDTN/BPv7, AFS 사용자 정의 메시지, RAW Fragment, UDP I/Q 전송 및 RAW 3자 비교는 이후 구현 대상이다.
 
 ---
 

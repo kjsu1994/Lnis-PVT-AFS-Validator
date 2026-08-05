@@ -1,0 +1,65 @@
+/**
+ * @file UdpDelaySimRunner.h
+ * @author  Brian Tomko <brian.j.tomko@nasa.gov>
+ *
+ * @copyright Copyright (c) 2026 United States Government as represented by
+ * the National Aeronautics and Space Administration.
+ * No copyright is claimed in the United States under Title 17, U.S.Code.
+ * All Other Rights Reserved.
+ *
+ * @section LICENSE
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @section DESCRIPTION
+ *
+ * This UdpDelaySimRunner class processes command line args and spins up
+ * a single instance of UdpDelaySim within its own process with ctrl-c interrupt support.
+ */
+
+#ifndef _UDP_DELAY_SIM_RUNNER_H
+#define _UDP_DELAY_SIM_RUNNER_H 1
+
+#include <stdint.h>
+#include "udp_delay_sim_lib_export.h"
+#include <atomic>
+
+class UdpDelaySimRunner {
+public:
+    /// Default constructor
+    UDP_DELAY_SIM_LIB_EXPORT UdpDelaySimRunner();
+    /// Default destructor
+    UDP_DELAY_SIM_LIB_EXPORT ~UdpDelaySimRunner();
+    
+    /** Run the delay simulation.
+     *
+     * @param argc The number of command-line arguments.
+     * @param argv The array of command-line arguments.
+     * @param running The simulation running flag.
+     * @param useSignalHandler Whether to activate the signal handler.
+     * @return True if the simulation exited cleanly, or False otherwise.
+     */
+    UDP_DELAY_SIM_LIB_EXPORT bool Run(int argc, const char* const argv[], std::atomic<bool>& running, bool useSignalHandler);
+    
+private:
+    /** Set the exit flag from the signal handler.
+     *
+     * Forwards intent to exit by setting m_runningFromSigHandler to False due to exit keypress being caught by the signal handler.
+     */
+    UDP_DELAY_SIM_LIB_NO_EXPORT void MonitorExitKeypressThreadFunction();
+
+    /// Signal handler flag, whether the simulation should keep running
+    std::atomic<bool> m_runningFromSigHandler;
+};
+
+
+#endif //_UDP_DELAY_SIM_RUNNER_H

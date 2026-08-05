@@ -1,0 +1,67 @@
+/**
+ * @file Environment.cpp
+ * @author  Jeff Follo
+ *
+ * @copyright Copyright (c) 2026 United States Government as represented by
+ * the National Aeronautics and Space Administration.
+ * No copyright is claimed in the United States under Title 17, U.S.Code.
+ * All Other Rights Reserved.
+ *
+ * @section LICENSE
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <Environment.h>
+
+#ifndef INSTALL_DATA_DIR
+#warning "INSTALL_DATA_DIR not set, using /usr/local/share"
+#define INSTALL_DATA_DIR /usr/local/share
+#endif
+#define str_(s) #s
+#define str(s) str_(s)
+
+static const std::string InstallDataDir{str(INSTALL_DATA_DIR)};
+
+std::string Environment::GetValue(const std::string & variableName) {
+    std::string value = "";
+    if (const char * const variableValue = std::getenv(variableName.c_str())) {
+        value = variableValue;
+    }
+    return value;
+}
+
+boost::filesystem::path Environment::GetPathHdtnSourceRoot() {
+    std::string hdtnSourceRoot = Environment::GetValue("HDTN_SOURCE_ROOT");
+    return boost::filesystem::path(hdtnSourceRoot);
+}
+
+boost::filesystem::path Environment::GetPathHdtnBuildRoot() {
+    std::string hdtnSourceRoot = Environment::GetValue("HDTN_BUILD_ROOT");
+    return boost::filesystem::path(hdtnSourceRoot);
+}
+
+boost::filesystem::path Environment::GetPathContactPlans() {
+    if (const char * const s = std::getenv("HDTN_SOURCE_ROOT")) {
+        return boost::filesystem::path(s) / "module/router/contact_plans";
+    } else {
+        return boost::filesystem::path(InstallDataDir) / "contact_plans";
+    }
+}
+
+boost::filesystem::path Environment::GetPathGuiDocumentRoot() {
+    if (const char * const s = std::getenv("HDTN_SOURCE_ROOT")) {
+        return Environment::GetValue("HDTN_GUI_VERSION") == "2" ? boost::filesystem::path(s) / "module" / "telem_cmd_interface" / "src" / "gui_v2" / "build" : boost::filesystem::path(s) / "module" / "telem_cmd_interface" / "src" / "gui";
+    } else {
+        return Environment::GetValue("HDTN_GUI_VERSION") == "2" ? boost::filesystem::path(InstallDataDir) / "gui_v2" / "build" : boost::filesystem::path(InstallDataDir) / "gui";
+    }
+}

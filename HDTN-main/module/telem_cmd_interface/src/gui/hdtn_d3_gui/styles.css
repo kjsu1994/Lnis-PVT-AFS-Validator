@@ -1,0 +1,77 @@
+body {
+    font-family: helvetica, sans-serif;
+}
+body, input, button, select, textarea, optgroup, option {
+    font-size: 1vw;
+}
+input {
+    width: 1vw;
+    height: 1vw;
+}
+svg text {
+    font-weight: bold;
+    pointer-events: none;
+    /*font-size in index.html since it can be changed*/
+}
+svg rect.tooltip {
+    fill: lightsteelblue;
+    pointer-events: none;
+}
+
+svg text.system_outline_group_text {
+    font-size: 32px;
+}
+
+svg.svgViewBoxClass {
+    display: block;
+    /*border: 1px solid #ccc;*/
+    position: absolute;
+    top: 50px;
+    left: 10px;
+    width: calc(100vw - 20px);
+    height: calc(99vh - 50px);
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.buffer_fill_color {
+    stop-color: green;
+}
+.buffer_nonfill_color {
+    stop-color: white;
+}
+
+.off_switch_rect {
+    fill: Gainsboro;
+}
+.on_switch_rect {
+    fill: Lime;
+}
+
+
+.module_body {
+    fill: burlywood;
+}
+
+.bus_bar {
+    stroke-width: 5;
+}
+
+.induct_body {
+    fill: yellow;
+}
+
+#hiddenTextMeasurementDiv {
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap;
+}
+#hiddenTextMeasurementSvgText {
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap;
+}

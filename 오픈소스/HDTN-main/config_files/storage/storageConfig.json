@@ -1,0 +1,17 @@
+{
+    "storageImplementation": "stdio_multi_threaded",
+    "tryToRestoreFromDisk": false,
+    "autoDeleteFilesOnExit": true,
+    "totalStorageCapacityBytes": 8192000000,
+    "storageDeletionPolicy" : "never",
+    "storageDiskConfigVector": [
+        {
+            "name": "d1",
+            "storeFilePath": "C:\\hdtn_tmp\\store1.bin"
+        },
+        {
+            "name": "d2",
+            "storeFilePath": "C:\\hdtn_tmp\\store2.bin"
+        }
+    ]
+}

@@ -1,0 +1,94 @@
+/**
+ * @file TelemetryConnection.h
+ *
+ * @copyright Copyright (c) 2026 United States Government as represented by
+ * the National Aeronautics and Space Administration.
+ * No copyright is claimed in the United States under Title 17, U.S.Code.
+ * All Other Rights Reserved.
+ *
+ * @section LICENSE
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @section DESCRIPTION
+ * This TelemetryConnection class implements initializing and handling message i/o on a ZMQ connection,
+ * specifically for receiving telemetry data from HDTN.
+ */
+
+#ifndef TELEMETRY_CONNECTION_H
+#define TELEMETRY_CONNECTION_H 1
+
+#include <queue>
+
+#include <boost/thread.hpp>
+#include "zmq.hpp"
+
+#include "telem_lib_export.h"
+#include "TelemetryDefinitions.h"
+
+enum class ApiSource_t {
+    webgui,
+    socket
+};
+
+class TelemetryConnection
+{
+    public:
+        TELEM_LIB_EXPORT TelemetryConnection(
+            const std::string& addr,
+            zmq::context_t* contextPtr,
+            zmq::socket_type socketType,
+            bool bind = false
+        );
+        TELEM_LIB_EXPORT ~TelemetryConnection();
+
+        /**
+         * Sends a new message on the connnection
+         * @param buffer the zmq::const_buffer to send
+         */
+        TELEM_LIB_EXPORT bool SendZmqConstBufferMessage(const zmq::const_buffer& buffer, bool more); //note: SendMessage is a reserved define in Windows
+
+        TELEM_LIB_EXPORT bool SendZmqMessage(zmq::message_t&& zmqMessage, bool more);
+
+        /**
+         * Reads a new message from the connection, if available 
+         */
+        TELEM_LIB_EXPORT zmq::message_t ReadMessage();
+
+        /**
+         * Gets the underlying socket handle 
+         */
+        TELEM_LIB_EXPORT void* GetSocketHandle();
+
+
+        /**
+         * Sends a new request for telemetry. Handles sending queued API calls.
+         * @param alwaysRequest whether to always request data, even if there are no API calls queued
+         */
+        TELEM_LIB_EXPORT void SendRequests();
+
+        /**
+         * Enqueues a new API payload to be sent on the next request 
+         */
+        TELEM_LIB_EXPORT bool EnqueueApiPayload(std::string&& payload, zmq::message_t&& connectionID);
+
+    private:
+        TelemetryConnection() = delete;
+        std::string m_addr;
+        std::unique_ptr<zmq::socket_t> m_socket;
+        std::unique_ptr<zmq::context_t> m_context;
+        typedef std::pair<zmq::message_t, zmq::message_t> zmq_api_msg_plus_connection_id_pair_t;
+        std::queue<zmq_api_msg_plus_connection_id_pair_t> m_apiCallsQueue;
+        boost::mutex m_apiCallsMutex;
+};
+
+#endif //TELEMETRY_CONNECTION_H

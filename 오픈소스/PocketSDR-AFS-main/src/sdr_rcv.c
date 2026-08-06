@@ -83,7 +83,7 @@ static int get_nch_trk(sdr_rcv_t *rcv, char *sys)
     }
     return nch;
 }
-
+// 확인 - 화면 로그 출력부
 // print SDR receiver status header --------------------------------------------
 static int print_head(char *buff, sdr_rcv_t *rcv)
 {

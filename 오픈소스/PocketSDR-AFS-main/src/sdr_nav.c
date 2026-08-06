@@ -208,6 +208,7 @@ static int sync_frame(sdr_ch_t *ch, const uint8_t *preamb, int n, int m,
     return -1;
 }
 
+//확인 - CRC검사 확인부
 // test CRC24Q -----------------------------------------------------------------
 int test_CRC(const uint8_t *bits, int len_bits)
 {
@@ -2141,11 +2142,14 @@ static void decode_AFSD_frame(sdr_ch_t *ch, uint8_t *syms, int rev)
         syms_rcv[i + 2640] = ERASURE;
     }
 
+    // 확인 - SB2는 실제 LDPC + CRC 성공 후에만 기록됨
+    //AFSD 프레임 처리 코드는 먼저 수신 심볼을 재배열하고 LDPC 복호 함수를 호출
     pthread_mutex_lock(&ldpc_afs_mtx); // LDPC-code library is not thread-safe.
     nerr = sdr_decode_LDPC_AFS_SF2(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);
     crcok = test_CRC(syms_dec, 1200);
 
+    // LDPC 복호 함수 반환값 >= 0     AND     복호된 1200비트의 CRC24 일치
     if (nerr >= 0 && crcok) {
         ch->nav->ssync = ch->nav->fsync = ch->lock;
         ch->nav->rev = rev;
@@ -2165,6 +2169,7 @@ static void decode_AFSD_frame(sdr_ch_t *ch, uint8_t *syms, int rev)
         char str[512];
         hex_str(data, 1200, str);
         str[80] = 0; // terminalted
+        //로그출력
         sdr_log(3, "$SB2,%.3f,%s,%d,%s,%s", time, ch->sig, ch->prn, str, str + 294); 
     }
     else {
@@ -2189,12 +2194,13 @@ static void decode_AFSD_frame(sdr_ch_t *ch, uint8_t *syms, int rev)
     for (i = 0; i < 2650; i++) {
         syms_rcv[i + 1926] = ERASURE;
     }
-
+    
+    // 확인 - SB3·SB4 실제 LDPC + CRC 성공 후에만 기록됨
     pthread_mutex_lock(&ldpc_afs_mtx);
     nerr = sdr_decode_LDPC_AFS_SF3(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);
     crcok = test_CRC(syms_dec, 870);
-
+    // LDPC 복호 함수 반환값 >= 0     AND     복호된 870비트의 CRC24 일치
     if (nerr >= 0 && crcok) {
         sdr_log(3, "$SB3,%.3f,%s,%d,FRAME DECODED", time, ch->sig, ch->prn);
     }
@@ -2218,7 +2224,7 @@ static void decode_AFSD_frame(sdr_ch_t *ch, uint8_t *syms, int rev)
     for (i = 0; i < 2650; i++) {
         syms_rcv[i + 1926] = ERASURE;
     }
-
+    // 확인 - SB3·SB4 실제 LDPC + CRC 성공 후에만 기록됨  -sb4
     pthread_mutex_lock(&ldpc_afs_mtx);
     nerr = sdr_decode_LDPC_AFS_SF3(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);

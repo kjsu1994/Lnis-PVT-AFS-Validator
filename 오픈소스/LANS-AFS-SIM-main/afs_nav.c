@@ -3765,7 +3765,18 @@ static const uint16_t SF3_B_Inv_ind[][2] = {
     {  87, 350},{ 175, 350},{ 263, 350},{ 350, 350},{ 351, 350},{   0, 351},{  88, 351},{ 176, 351},{ 264, 351},{ 351, 351}
 };
 
-
+/** 확인 - SB2 LDPC 부호화
+ * @brief AFS SB2 1200비트를 LDPC 부호화하여 2400개 전송 심볼을 만든다.
+ *
+ * 입력:
+ *   1176비트 항법 데이터 + CRC24 = 1200비트
+ *
+ * 전체 LDPC 코드워드:
+ *   systematic 1200 + p1 480 + p2 4560 = 6240비트
+ *
+ * 실제 전송:
+ *   systematic 일부 960 + p1 480 + p2 일부 960 = 2400심볼
+ */
 void encode_LDPC_AFS_SF2(const uint8_t* syms, uint8_t* syms_enc)
 {
     if (!SF2_A) {
@@ -3796,7 +3807,11 @@ void encode_LDPC_AFS_SF2(const uint8_t* syms, uint8_t* syms_enc)
             mod2sparse_insert(SF2_D, SF2_D_ind[i][0], SF2_D_ind[i][1]);
         }
     }
-
+    
+    /*syms   = 원본 1200비트
+    p1     = 첫 번째 패리티 480비트
+    p2     = 두 번째 패리티 4560비트
+    A, B⁻¹, C, D = LDPC 패리티 검사 행렬을 구성하는 부분 행렬*/
     char* p1 = (char*)chk_alloc(480, sizeof * p1);
     char* p2 = (char*)chk_alloc(4560, sizeof * p2);
     char* As = (char*)chk_alloc(480, sizeof * As);
@@ -3804,25 +3819,32 @@ void encode_LDPC_AFS_SF2(const uint8_t* syms, uint8_t* syms_enc)
     char* Dp1 = (char*)chk_alloc(4560, sizeof * Dp1);
 
     // Generate the encoded symbols
+    // A × 원본 데이터
     mod2sparse_mulvec(SF2_A, (char*)syms, As);
+    // p1 = B⁻¹ × A × 원본 데이터
     mod2sparse_mulvec(SF2_B_Inv, As, p1);
-
+    // C × 원본 데이터
     mod2sparse_mulvec(SF2_C, (char*)syms, Cs);
+    // D × p1
     mod2sparse_mulvec(SF2_D, p1, Dp1);
-
+    // p2 = C × 원본 데이터 XOR D × p1
     for (int i = 0; i < 4560; i++) {
-        p2[i] = (Cs[i] + Dp1[i]) % 2;
+        p2[i] = (Cs[i] + Dp1[i]) % 2;  // %2는 이진 연산에서는 XOR와 같음  
     }
 
     // Puncture the first 240 bits of the systematic portion of the codeword
+    // 원본 1200비트 중 앞의 240비트를 제외하고
+    // 나머지 960비트만 전송
     for (int i = 0; i < 960; i++) {
         syms_enc[i] = syms[i + 240];
     }
 
     // Append the parity bits until the subframe reaches its desired symbol count
+    // p1 480비트는 모두 전송
     for (int i = 0; i < 480; i++) {
         syms_enc[i + 960] = p1[i];
     }
+    // p2 4560비트 중 앞의 960비트만 전송
     for (int i = 0; i < 960; i++) {
         syms_enc[i + 1440] = p2[i];
     }
@@ -3836,6 +3858,22 @@ void encode_LDPC_AFS_SF2(const uint8_t* syms, uint8_t* syms_enc)
     return;
 }
 
+/** 확인 - SB3 또는 SB4 LDPC 부호화
+ * @brief AFS SB3 또는 SB4의 870비트를 LDPC 부호화하여
+ *        1740개 전송 심볼을 생성한다.
+ *
+ * 입력:
+ *   데이터 846비트 + CRC24 = 870비트
+ *
+ * LDPC 입력:
+ *   870비트 + filler 10비트 = 880비트
+ *
+ * 전체 코드워드:
+ *   systematic 880 + p1 352 + p2 3344 = 4576비트
+ *
+ * 실제 전송:
+ *   systematic 694 + p1 352 + p2 694 = 1740심볼
+ */
 void encode_LDPC_AFS_SF3(const uint8_t* syms, uint8_t* syms_enc)
 {
     if (!SF3_A) {
@@ -3915,7 +3953,24 @@ void encode_LDPC_AFS_SF3(const uint8_t* syms, uint8_t* syms_enc)
 
     return;
 }
-
+//확인 - CRC24 검사값 추가
+/**
+ * @brief 데이터 비트 뒤에 CRC24Q 검사값을 추가한다.
+ *
+ * @param syms
+ *   입력 및 출력 비트 배열.
+ *   함수 호출 전에는 앞부분에 원본 데이터가 들어 있고,
+ *   함수 실행 후에는 마지막 24비트 위치에 CRC24가 저장된다.
+ *
+ * @param len
+ *   CRC24를 포함한 전체 비트 길이.
+ *
+ *   SB2: len = 1200
+ *        원본 데이터 1176비트 + CRC 24비트
+ *
+ *   SB3/SB4: len = 870
+ *            원본 데이터 846비트 + CRC 24비트
+ */
 void append_CRC24(uint8_t* syms, int len)
 {
     uint8_t buff[256];
@@ -3944,7 +3999,11 @@ void generate_BCH_AFS_SF1(uint8_t* syms, int fid, int toi)
 
     return;
 }
-
+/* 확인 - 인터리빙
+* AFS_SB234[0 ~ 2399]       SB2 2400심볼
+AFS_SB234[2400 ~ 4139]    SB3 1740심볼
+AFS_SB234[4140 ~ 5879]    SB4 1740심볼 
+*/
 void interleave_AFS_SF234(uint8_t* syms_in, uint8_t* syms_out)
 {
     int i, j, k;

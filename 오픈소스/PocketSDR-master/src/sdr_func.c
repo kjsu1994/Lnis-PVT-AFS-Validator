@@ -1597,7 +1597,7 @@ void sdr_log_mask(const int *mask, int n)
         log_mask[i] = mask[i];
     }
 }
-
+//로그파일 메세지 출력부
 // output log ------------------------------------------------------------------
 void sdr_log(int level, const char *msg, ...)
 {

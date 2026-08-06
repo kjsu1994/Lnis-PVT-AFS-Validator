@@ -939,7 +939,29 @@ void printUsage(void)
 
     exit(0);
 }
-
+/*
+ * AFS 데이터 프레임 생성 순서
+ *
+ * 1. SB2
+ *    - 위성별 궤도 및 시계정보를 비트 필드로 구성
+ *    - 데이터 1176비트 + CRC24 = 1200비트
+ *    - LDPC 부호화 및 천공
+ *    - 전송 심볼 2400개 생성
+ *
+ * 2. SB3/SB4
+ *    - 현재 구현은 실제 항법정보 대신 0,1 반복 시험 패턴 사용
+ *    - 데이터 846비트 + CRC24 = 870비트
+ *    - filler 10비트 추가 후 LDPC 부호화 및 천공
+ *    - 각 서브프레임당 전송 심볼 1740개 생성
+ *
+ * 3. SB2 + SB3 + SB4
+ *    - 2400 + 1740 + 1740 = 5880심볼
+ *    - 60행 × 98열 블록 인터리빙 수행
+ *
+ * 4. 전체 데이터 프레임
+ *    - 동기 패턴 68 + SB1 52 + SB2~SB4 5880
+ *    - 총 6000심볼, 심볼당 2ms이므로 12초
+ */
 int main(int argc, char** argv)
 {
     FILE *fp;
@@ -1199,6 +1221,7 @@ int main(int argc, char** argv)
             chan[i].azel[0] * R2D, chan[i].azel[1] * R2D, rho0[sv].range, -rho0[sv].rate/LAMBDA);
     }
 
+    //AFS Frame Data 생성
     // Insert synchronization pattern 
 
     const uint8_t sync[9] ={0xCC, 0x63, 0xF7, 0x45, 0x36, 0xF4, 0x9E, 0x04, 0xA0}; // left justified
@@ -1222,11 +1245,14 @@ int main(int argc, char** argv)
 
     uint8_t AFS_SB234[5880];
     uint8_t syms[5880];
-
+    // SB3·SB4에 넣을 846비트 시험 패턴 생성
     for (i = 0; i < 846; i++) {
         syms[i] = i%2; // test pattern 0,1,0,1,...
     }
+    // SB3 원본 846비트 뒤에 CRC24를 붙여 총 870비트 구성
     append_CRC24(syms, 870);
+    // SB3 870비트를 LDPC 부호화하고 천공하여
+    // 1740개 전송 심볼을 AFS_SB234[2400...]에 저장
     encode_LDPC_AFS_SF3(syms, AFS_SB234 + 2400); // Subframe 3
 
     encode_LDPC_AFS_SF3(syms, AFS_SB234 + 4140); // Subframe 4
@@ -1254,7 +1280,7 @@ int main(int argc, char** argv)
     // Generate baseband signals
 
     tstart = clock();
-
+    //./afs_sim -t 1 -b 2 test.bin 파일 생성 시 로그
     fprintf(stderr, "Generating baseband signals...\n");
 
     fprintf(stderr, "\rTime = %4.1f", grx.sec - g0.sec);

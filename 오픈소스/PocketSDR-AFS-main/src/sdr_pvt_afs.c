@@ -451,7 +451,7 @@ void update_sol_afs(sdr_pvt_t *pvt)
 
     out_log_pos(time, pvt->sol, nsat);
 }
-
+// 확인 - 복호된 AFS SB2 데이터에서 위성 궤도정보를 꺼내서 PVT 계산에 사용할 형태로 저장 단, PVT를 계산하진 않음
 int decode_afs_frame(const uint8_t *buff, int prn)
 {
     int sv = prn - 1;
@@ -459,9 +459,9 @@ int decode_afs_frame(const uint8_t *buff, int prn)
     int wn;
 
     if (sv >= MAX_SAT) return 0;
-
+    //궤도정보로 저장
     wn = getbitu(buff, i, 13); i += 22;
-
+  
     eph[sv].toe.week = wn;
     eph[sv].toe.sec  = getbitu(buff, i, 16) * 16.0;          i += 16;
     eph[sv].ecc      = getbitu(buff, i, 32) * POW2_M32;      i += 32;

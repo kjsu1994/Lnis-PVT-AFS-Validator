@@ -19,7 +19,7 @@ static int AFS_LOG_SB = 0;
 // 로그처리: 비트 배열 한 조각을 16진수 문자열로 변환한다.
 static void bits_to_hex(const uint8_t* bits, int len, char* hex)
 {
-    static const char tbl[] = "0123456789ABCDEF";
+    static const char tbl[] = 0123456789ABCDEF;
     int i, j, v;
 
     for (i = 0; i < len; i += 4) {
@@ -32,9 +32,7 @@ static void bits_to_hex(const uint8_t* bits, int len, char* hex)
 }
 
 // 로그처리: 사람이 송수신 로그를 같은 비교ID로 찾을 수 있도록 비트와 16진수를 기록한다.
-void log_AFS_bits(FILE* fp, const char* id, int prn, int toi, int sb,
-    const char* stage, const uint8_t* bits, int len)
-{
+void log_AFS_bits(FILE* fp, const char* id, int prn, int toi, int sb, const char* stage, const uint8_t* bits, int len){
     char bitstr[257], hex[65];
     int off, n, i;
 
@@ -44,14 +42,14 @@ void log_AFS_bits(FILE* fp, const char* id, int prn, int toi, int sb,
         for (i = 0; i < n; i++) bitstr[i] = bits[off + i] ? '1' : '0';
         bitstr[n] = '\0';
         bits_to_hex(bits + off, n, hex);
-        fprintf(fp, "[송신][비교ID=%s]", id);
-        if (prn > 0) fprintf(fp, "[PRN=%02d]", prn);
-        else fprintf(fp, "[PRN=공통]");
-        if (toi >= 0) fprintf(fp, "[TOI=%02d]", toi);
-        if (sb > 0) fprintf(fp, "[SB%02d]", sb);
-        fprintf(fp, "[단계=%s][길이=%d][비트범위=%04d-%04d]\n",
+        fprintf(fp, [송신][비교ID=%s], id);
+        if (prn > 0) fprintf(fp, [PRN=%02d], prn);
+        else fprintf(fp, [PRN=공통]);
+        if (toi >= 0) fprintf(fp, [TOI=%02d], toi);
+        if (sb > 0) fprintf(fp, [SB%02d], sb);
+        fprintf(fp, [단계=%s][길이=%d][비트범위=%04d-%04d]\n,
             stage, len, off, off + n - 1);
-        fprintf(fp, "비트=%s\n16진수=%s\n", bitstr, hex);
+        fprintf(fp, 비트=%s\n16진수=%s\n, bitstr, hex);
     }
     fflush(fp);
 }
@@ -66,9 +64,7 @@ void set_AFS_log_context(FILE* fp, int prn, int toi, int sb)
 }
 
 // 로그처리: SB02 LDPC 내부 배열을 동일 비교ID로 기록한다.
-static void log_LDPC_SF2(const uint8_t* syms, const char* p1,
-    const char* p2, const uint8_t* encoded)
-{
+static void log_LDPC_SF2(const uint8_t* syms, const char* p1, const char* p2, const uint8_t* encoded){
     uint8_t* codeword;
     char id[32];
     if (!AFS_LOG_FP || AFS_LOG_SB != 2) return;
@@ -96,9 +92,7 @@ static void log_LDPC_SF2(const uint8_t* syms, const char* p1,
 }
 
 // 로그처리: SB03/SB04 LDPC 내부 배열을 공통 비교ID로 기록한다.
-static void log_LDPC_SF34(const char* syms, const char* p1,
-    const char* p2, const uint8_t* encoded)
-{
+static void log_LDPC_SF34(const char* syms, const char* p1, const char* p2, const uint8_t* encoded){
     uint8_t* codeword;
     char id[32];
     int base;

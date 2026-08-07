@@ -123,9 +123,7 @@ static pthread_mutex_t afs_log_mtx = PTHREAD_MUTEX_INITIALIZER;
 int test_CRC(const uint8_t* bits, int len_bits);
 
 // 로그처리: 수신 비트 배열을 송신측과 동일한 비교ID, 비트범위, 16진수 형식으로 기록한다.
-static void log_AFS_rx_bits(const char* id, int prn, int toi, int sb,
-    const char* stage, const uint8_t* bits, int len)
-{
+static void log_AFS_rx_bits(const char* id, int prn, int toi, int sb,const char* stage, const uint8_t* bits, int len){
     static const char hex_tbl[] = "0123456789ABCDEF";
     char bitstr[257], hex[65];
     int off, n, i, j, v, erasure, pos = 0;

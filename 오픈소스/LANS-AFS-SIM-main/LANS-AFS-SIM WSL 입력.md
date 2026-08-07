@@ -1,3 +1,4 @@
+## Linux
 ### git 오픈소스 복제
 ```text
 git clone https://github.com/osqzss/LANS-AFS-SIM.git
@@ -75,4 +76,65 @@ afs_rand.c \
 -- 008_Weil1500hex210prns.txt, default_almanac.txt 같은 런타임 데이터 파일이 있고, afs_sim.c가 tertiary code 파일을 읽도록 되어 있음
 ```text
 .\afs_sim.exe -t 90 -b 2 test_iq2.bin
+```
+-----------------------------------------
+
+## PowerShell
+### 파워쉘 exe파일 생성하기
+
+### MSYS2 설치 및 필요 컴파일러 설치
+```text
+winget install --id MSYS2.MSYS2 -e
+
+Test-Path C:\msys64   
+
+//파워쉘 새로열고 작업
+C:\msys64\usr\bin\pacman.exe -Syu
+
+C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-fftw
+
+// 세션에 Path 추가
+$env:Path = "C:\msys64\mingw64\bin;$env:Path"
+
+//설치확인
+gcc --version
+g++ --version
+mingw32-make --version
+```
+
+### 윈도우에서 컴파일
+```text
+cd O:\3.ing\LNIS\오픈소스\LANS-AFS-SIM-main
+
+//기존 실행파일 지우기
+Remove-Item .\afs_sim.exe -ErrorAction SilentlyContinue
+
+//컴파일
+gcc `
+    -Ofast `
+    -fopenmp `
+    -I.\ldpc `
+    -I.\rtklib `
+    -I.\pocketsdr `
+    .\afs_sim.c `
+    .\afs_nav.c `
+    .\afs_rand.c `
+    .\ldpc\alloc.c `
+    .\ldpc\mod2sparse.c `
+    .\rtklib\rtkcmn.c `
+    .\pocketsdr\pocketsdr.c `
+    -lm `
+    -static `
+    -static-libgcc `
+    -o afs_sim.exe
+
+//설치 확인    
+Get-Item .\afs_sim.exe
+
+Get-ChildItem `
+    .\008_Weil1500hex210prns.txt, `
+    .\default_almanac.txt
+    
+// 실행
+.\afs_sim.exe -t 90 -b 2 90s_2qb.bin
 ```

@@ -78,3 +78,52 @@ cd ~/lnis/PocketSDR-AFS/app/pocket_trk
 
 ./pocket_trk.sh ~/lnis/LANS-AFS-SIM/afs_24s.bin
 ```
+
+---------------------------------------
+
+## PowerShell
+### 파워쉘 exe파일 생성하기
+
+### MSYS2 설치 및 필요 컴파일러 설치
+```text
+winget install --id MSYS2.MSYS2 -e
+
+Test-Path C:\msys64   
+
+//파워쉘 새로열고 작업
+C:\msys64\usr\bin\pacman.exe -Syu
+
+C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-make mingw-w64-x86_64-fftw
+
+// 세션에 Path 추가
+$env:Path = "C:\msys64\mingw64\bin;$env:Path"
+
+//설치확인
+gcc --version
+g++ --version
+mingw32-make --version
+```
+
+### 윈도우에서 컴파일
+```text
+cd O:\3.ing\LNIS\오픈소스\PocketSDR-AFS
+
+//윈도우 라이브러리 확인
+Get-ChildItem .\lib\win32
+
+// 결과 True 확인
+Test-Path .\lib\cyusb\CyAPI.a
+
+// pocket_trk 폴더로 이동
+cd .\app\pocket_trk
+Get-Location
+
+$env:OS = "Windows_NT"
+
+//기존파일 삭제 후 빌드
+mingw32-make clean
+mingw32-make
+
+// 실행
+.\pocket_trk.exe -sig AFSD -prn 2-8 -sig AFSP -prn 2-8 -f 12 -IQ 2 -log log.txt "O:\3.ing\LNIS\LnisAfsValidator\오픈소스\LANS-AFS-SIM-main\90s_2qb.bin"
+```

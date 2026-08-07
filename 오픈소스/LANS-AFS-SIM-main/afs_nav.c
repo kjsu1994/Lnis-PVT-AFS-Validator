@@ -10,6 +10,123 @@ static void* SF3_B_Inv = NULL;
 static void* SF3_C = NULL;
 static void* SF3_D = NULL;
 
+// 로그처리: LDPC 함수 내부 로그에 사용할 송신 프레임 식별정보를 보관한다.
+static FILE* AFS_LOG_FP = NULL;
+static int AFS_LOG_PRN = 0;
+static int AFS_LOG_TOI = -1;
+static int AFS_LOG_SB = 0;
+
+// 로그처리: 비트 배열 한 조각을 16진수 문자열로 변환한다.
+static void bits_to_hex(const uint8_t* bits, int len, char* hex)
+{
+    static const char tbl[] = "0123456789ABCDEF";
+    int i, j, v;
+
+    for (i = 0; i < len; i += 4) {
+        for (j = 0, v = 0; j < 4; j++) {
+            v = (v << 1) | (i + j < len ? bits[i + j] & 1 : 0);
+        }
+        hex[i / 4] = tbl[v];
+    }
+    hex[(len + 3) / 4] = '\0';
+}
+
+// 로그처리: 사람이 송수신 로그를 같은 비교ID로 찾을 수 있도록 비트와 16진수를 기록한다.
+void log_AFS_bits(FILE* fp, const char* id, int prn, int toi, int sb,
+    const char* stage, const uint8_t* bits, int len)
+{
+    char bitstr[257], hex[65];
+    int off, n, i;
+
+    if (!fp) return;
+    for (off = 0; off < len; off += 256) {
+        n = len - off < 256 ? len - off : 256;
+        for (i = 0; i < n; i++) bitstr[i] = bits[off + i] ? '1' : '0';
+        bitstr[n] = '\0';
+        bits_to_hex(bits + off, n, hex);
+        fprintf(fp, "[송신][비교ID=%s]", id);
+        if (prn > 0) fprintf(fp, "[PRN=%02d]", prn);
+        else fprintf(fp, "[PRN=공통]");
+        if (toi >= 0) fprintf(fp, "[TOI=%02d]", toi);
+        if (sb > 0) fprintf(fp, "[SB%02d]", sb);
+        fprintf(fp, "[단계=%s][길이=%d][비트범위=%04d-%04d]\n",
+            stage, len, off, off + n - 1);
+        fprintf(fp, "비트=%s\n16진수=%s\n", bitstr, hex);
+    }
+    fflush(fp);
+}
+
+// 로그처리: LDPC 함수가 기존 인자 변경 없이 현재 SB의 내부 계산값을 기록하도록 문맥을 지정한다.
+void set_AFS_log_context(FILE* fp, int prn, int toi, int sb)
+{
+    AFS_LOG_FP = fp;
+    AFS_LOG_PRN = prn;
+    AFS_LOG_TOI = toi;
+    AFS_LOG_SB = sb;
+}
+
+// 로그처리: SB02 LDPC 내부 배열을 동일 비교ID로 기록한다.
+static void log_LDPC_SF2(const uint8_t* syms, const char* p1,
+    const char* p2, const uint8_t* encoded)
+{
+    uint8_t* codeword;
+    char id[32];
+    if (!AFS_LOG_FP || AFS_LOG_SB != 2) return;
+    snprintf(id, sizeof(id), "C203-P%02d-SYS", AFS_LOG_PRN);
+    log_AFS_bits(AFS_LOG_FP, id, AFS_LOG_PRN, AFS_LOG_TOI, 2,
+        "LDPC systematic", syms, 1200);
+    snprintf(id, sizeof(id), "C203-P%02d-P1", AFS_LOG_PRN);
+    log_AFS_bits(AFS_LOG_FP, id, AFS_LOG_PRN, AFS_LOG_TOI, 2,
+        "LDPC p1", (const uint8_t*)p1, 480);
+    snprintf(id, sizeof(id), "C203-P%02d-P2", AFS_LOG_PRN);
+    log_AFS_bits(AFS_LOG_FP, id, AFS_LOG_PRN, AFS_LOG_TOI, 2,
+        "LDPC p2", (const uint8_t*)p2, 4560);
+    if ((codeword = (uint8_t*)malloc(6240))) {
+        memcpy(codeword, syms, 1200);
+        memcpy(codeword + 1200, p1, 480);
+        memcpy(codeword + 1680, p2, 4560);
+        snprintf(id, sizeof(id), "C203-P%02d", AFS_LOG_PRN);
+        log_AFS_bits(AFS_LOG_FP, id, AFS_LOG_PRN, AFS_LOG_TOI, 2,
+            "LDPC 전체 코드워드", codeword, 6240);
+        free(codeword);
+    }
+    snprintf(id, sizeof(id), "C204-P%02d", AFS_LOG_PRN);
+    log_AFS_bits(AFS_LOG_FP, id, AFS_LOG_PRN, AFS_LOG_TOI, 2,
+        "천공 후 송신 심볼", encoded, 2400);
+}
+
+// 로그처리: SB03/SB04 LDPC 내부 배열을 공통 비교ID로 기록한다.
+static void log_LDPC_SF34(const char* syms, const char* p1,
+    const char* p2, const uint8_t* encoded)
+{
+    uint8_t* codeword;
+    char id[32];
+    int base;
+    if (!AFS_LOG_FP || (AFS_LOG_SB != 3 && AFS_LOG_SB != 4)) return;
+    base = AFS_LOG_SB == 3 ? 303 : 403;
+    snprintf(id, sizeof(id), "C%d-SYS", base);
+    log_AFS_bits(AFS_LOG_FP, id, 0, AFS_LOG_TOI, AFS_LOG_SB,
+        "LDPC systematic(870비트+filler 10비트)", (const uint8_t*)syms, 880);
+    snprintf(id, sizeof(id), "C%d-P1", base);
+    log_AFS_bits(AFS_LOG_FP, id, 0, AFS_LOG_TOI, AFS_LOG_SB,
+        "LDPC p1", (const uint8_t*)p1, 352);
+    snprintf(id, sizeof(id), "C%d-P2", base);
+    log_AFS_bits(AFS_LOG_FP, id, 0, AFS_LOG_TOI, AFS_LOG_SB,
+        "LDPC p2", (const uint8_t*)p2, 3344);
+    if ((codeword = (uint8_t*)malloc(4576))) {
+        memcpy(codeword, syms, 880);
+        memcpy(codeword + 880, p1, 352);
+        memcpy(codeword + 1232, p2, 3344);
+        snprintf(id, sizeof(id), "C%d", base);
+        log_AFS_bits(AFS_LOG_FP, id, 0, AFS_LOG_TOI, AFS_LOG_SB,
+            "LDPC 전체 코드워드", codeword, 4576);
+        free(codeword);
+    }
+    snprintf(id, sizeof(id), "C%d", AFS_LOG_SB == 3 ? 304 : 404);
+    log_AFS_bits(AFS_LOG_FP, id, 0, AFS_LOG_TOI, AFS_LOG_SB,
+        "천공 후 송신 심볼", encoded, 1740);
+}
+
 static const uint16_t SF2_A_ind[][2] = {
     {  95,   0},{ 218,   0},{ 286,   0},{  96,   1},{ 219,   1},{ 287,   1},{  97,   2},{ 220,   2},{ 288,   2},{  98,   3},
     { 221,   3},{ 289,   3},{  99,   4},{ 222,   4},{ 290,   4},{ 100,   5},{ 223,   5},{ 291,   5},{ 101,   6},{ 224,   6},
@@ -3849,6 +3966,9 @@ void encode_LDPC_AFS_SF2(const uint8_t* syms, uint8_t* syms_enc)
         syms_enc[i + 1440] = p2[i];
     }
 
+    // 로그처리: 기존 SB02 계산 결과를 신호 배열 변경 없이 기록한다.
+    log_LDPC_SF2(syms, p1, p2, syms_enc);
+
     free(p1);
     free(p2);
     free(As);
@@ -3943,6 +4063,9 @@ void encode_LDPC_AFS_SF3(const uint8_t* syms, uint8_t* syms_enc)
     for (int i = 0; i < 694; i++) {
         syms_enc[i + 1046] = p2[i];
     }
+
+    // 로그처리: 기존 SB03/SB04 계산 결과를 신호 배열 변경 없이 기록한다.
+    log_LDPC_SF34(s, p1, p2, syms_enc);
 
     free(s);
     free(p1);

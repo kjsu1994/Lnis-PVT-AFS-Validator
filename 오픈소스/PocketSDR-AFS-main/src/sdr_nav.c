@@ -117,6 +117,58 @@ static uint8_t* AFS_SF1[100] = {NULL};
 // TEB: Mutex for AFS LDPC decoder
 static pthread_mutex_t ldpc_afs_mtx = PTHREAD_MUTEX_INITIALIZER;
 
+// 로그처리: PRN 08에서 완전 복호된 AFS 프레임의 상세 로그를 최대 2회 기록한다.
+static int AFS_DETAIL_LOG_COUNT[210] = {0};
+static pthread_mutex_t afs_log_mtx = PTHREAD_MUTEX_INITIALIZER;
+int test_CRC(const uint8_t* bits, int len_bits);
+
+// 로그처리: 수신 비트 배열을 송신측과 동일한 비교ID, 비트범위, 16진수 형식으로 기록한다.
+static void log_AFS_rx_bits(const char* id, int prn, int toi, int sb,
+    const char* stage, const uint8_t* bits, int len)
+{
+    static const char hex_tbl[] = "0123456789ABCDEF";
+    char bitstr[257], hex[65];
+    int off, n, i, j, v, erasure;
+
+    pthread_mutex_lock(&afs_log_mtx);
+    for (off = 0; off < len; off += 256) {
+        n = len - off < 256 ? len - off : 256;
+        erasure = 0;
+        for (i = 0; i < n; i++) {
+            bitstr[i] = bits[off + i] == 2 ? 'E' : (bits[off + i] ? '1' : '0');
+            if (bits[off + i] == 2) erasure = 1;
+        }
+        bitstr[n] = '\0';
+        for (i = 0; i < n; i += 4) {
+            for (j = 0, v = 0; j < 4; j++)
+                v = (v << 1) | (i + j < n ? bits[off + i + j] & 1 : 0);
+            hex[i / 4] = hex_tbl[v];
+        }
+        hex[(n + 3) / 4] = '\0';
+        sdr_log(3, "[수신][비교ID=%s][PRN=%02d][TOI=%02d][SB%02d][단계=%s][길이=%d][비트범위=%04d-%04d]",
+            id, prn, toi, sb, stage, len, off, off + n - 1);
+        sdr_log(3, "비트=%s", bitstr);
+        sdr_log(3, "16진수=%s", erasure ? "해당없음(erasure 포함)" : hex);
+    }
+    pthread_mutex_unlock(&afs_log_mtx);
+}
+
+// 로그처리: 복호 데이터의 수신 CRC24와 재계산 CRC24를 한글 판정과 함께 기록한다.
+static void log_AFS_rx_crc(const char* id, int prn, int toi, int sb,
+    const uint8_t* bits, int len)
+{
+    uint8_t buff[256], calc_bits[24];
+    int N = (len - 24 + 7) / 8 * 8;
+    uint32_t calc;
+    sdr_pack_bits(bits, len, N + 24 - len, buff);
+    calc = rtk_crc24q(buff, N / 8);
+    sdr_unpack_data(calc, 24, calc_bits);
+    log_AFS_rx_bits(id, prn, toi, sb, "프레임 내 CRC24", bits + len - 24, 24);
+    log_AFS_rx_bits(id, prn, toi, sb, "수신측 재계산 CRC24", calc_bits, 24);
+    sdr_log(3, "[수신][비교ID=%s][PRN=%02d][TOI=%02d][SB%02d][CRC24 비교 결과=%s]",
+        id, prn, toi, sb, test_CRC(bits, len) ? "일치" : "불일치");
+}
+
 // average of IP correlation ---------------------------------------------------
 static float mean_IP(const sdr_ch_t* ch, int N)
 {
@@ -2454,6 +2506,9 @@ static void decode_AFSD_frame(sdr_ch_t* ch, uint8_t* syms, int rev)
     uint8_t syms_dec[5040];
     uint8_t sf234[5880];
     uint8_t data[150]; // SB2: 1200 bits = 150 bytes
+    // 로그처리: 완전 복호된 프레임의 단계별 상세 로그 여부와 비교ID를 보관한다.
+    int detail_log = 0;
+    char afs_log_id[40];
 
     // search and decode SB1 for TOI
     for (toi = 0; toi < 100; toi++)
@@ -2498,6 +2553,37 @@ static void decode_AFSD_frame(sdr_ch_t* ch, uint8_t* syms, int rev)
     nerr = sdr_decode_LDPC_AFS_SF2(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);
     crcok = test_CRC(syms_dec, 1200);
+
+    // 로그처리: PRN 08에서 SB02 LDPC와 CRC24가 성공한 프레임부터 최대 2회만 상세 기록한다.
+    if (nerr >= 0 && crcok && ch->prn == 8 &&
+        AFS_DETAIL_LOG_COUNT[ch->prn - 1] < 2) {
+        uint8_t* frame = (uint8_t*)sdr_malloc(6000);
+        detail_log = 1;
+        AFS_DETAIL_LOG_COUNT[ch->prn - 1]++;
+        for (i = 0; i < 6000; i++) frame[i] = syms[i] ^ (uint8_t)rev;
+        log_AFS_rx_bits("C001", ch->prn, toi, 0, "극성 보정 후 동기 패턴", frame, 68);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C101-T%02d", toi);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 1, "수신 SB01", frame + 68, 52);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C601-P%02d-T%02d", ch->prn, toi);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 0, "극성 보정 후 수신 AFS 프레임", frame, 6000);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C502-P%02d", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 0, "인터리빙 상태 수신 심볼", frame + 120, 5880);
+        sdr_free(frame);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C501-P%02d", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 0, "디인터리빙 후 SB02~SB04", sf234, 5880);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C204-P%02d", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 2, "디인터리빙 후 분리한 천공 심볼", sf234, 2400);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C203-P%02d-ERASURE", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 2, "erasure 복원 후 LDPC 입력", syms_rcv, 6240);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C202-P%02d", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 2, "LDPC 복호 후", syms_dec, 1200);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C201-P%02d", ch->prn);
+        log_AFS_rx_bits(afs_log_id, ch->prn, toi, 2, "복호된 CRC24 입력 데이터", syms_dec, 1176);
+        snprintf(afs_log_id, sizeof(afs_log_id), "C202-P%02d-CRC", ch->prn);
+        log_AFS_rx_crc(afs_log_id, ch->prn, toi, 2, syms_dec, 1200);
+        sdr_log(3, "[수신][PRN=%02d][TOI=%02d][상세로그=%d/2][SB02 LDPC=%d][CRC24=일치]",
+            ch->prn, toi, AFS_DETAIL_LOG_COUNT[ch->prn - 1], nerr);
+    }
 
     // LDPC 복호 함수 반환값 >= 0     AND     복호된 1200비트의 CRC24 일치
     if (nerr >= 0 && crcok)
@@ -2560,6 +2646,18 @@ static void decode_AFSD_frame(sdr_ch_t* ch, uint8_t* syms, int rev)
     nerr = sdr_decode_LDPC_AFS_SF3(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);
     crcok = test_CRC(syms_dec, 870);
+    // 로그처리: 선택된 완전 프레임의 SB03 천공, erasure, LDPC 복호 및 CRC24를 기록한다.
+    if (detail_log) {
+        log_AFS_rx_bits("C304", ch->prn, toi, 3, "디인터리빙 후 분리한 천공 심볼",
+            sf234 + 2400, 1740);
+        log_AFS_rx_bits("C303-ERASURE", ch->prn, toi, 3, "erasure 복원 후 LDPC 입력",
+            syms_rcv, 4576);
+        log_AFS_rx_bits("C302", ch->prn, toi, 3, "LDPC 복호 후", syms_dec, 870);
+        log_AFS_rx_bits("C301", ch->prn, toi, 3, "복호된 CRC24 입력 데이터", syms_dec, 846);
+        log_AFS_rx_crc("C302-CRC", ch->prn, toi, 3, syms_dec, 870);
+        sdr_log(3, "[수신][비교ID=C302][PRN=%02d][TOI=%02d][SB03][LDPC=%d][CRC24=%s]",
+            ch->prn, toi, nerr, crcok ? "일치" : "불일치");
+    }
     // LDPC 복호 함수 반환값 >= 0     AND     복호된 870비트의 CRC24 일치
     if (nerr >= 0 && crcok)
     {
@@ -2596,6 +2694,19 @@ static void decode_AFSD_frame(sdr_ch_t* ch, uint8_t* syms, int rev)
     nerr = sdr_decode_LDPC_AFS_SF3(syms_rcv, syms_dec);
     pthread_mutex_unlock(&ldpc_afs_mtx);
     crcok = test_CRC(syms_dec, 870);
+
+    // 로그처리: 선택된 완전 프레임의 SB04 천공, erasure, LDPC 복호 및 CRC24를 기록한다.
+    if (detail_log) {
+        log_AFS_rx_bits("C404", ch->prn, toi, 4, "디인터리빙 후 분리한 천공 심볼",
+            sf234 + 4140, 1740);
+        log_AFS_rx_bits("C403-ERASURE", ch->prn, toi, 4, "erasure 복원 후 LDPC 입력",
+            syms_rcv, 4576);
+        log_AFS_rx_bits("C402", ch->prn, toi, 4, "LDPC 복호 후", syms_dec, 870);
+        log_AFS_rx_bits("C401", ch->prn, toi, 4, "복호된 CRC24 입력 데이터", syms_dec, 846);
+        log_AFS_rx_crc("C402-CRC", ch->prn, toi, 4, syms_dec, 870);
+        sdr_log(3, "[수신][비교ID=C402][PRN=%02d][TOI=%02d][SB04][LDPC=%d][CRC24=%s]",
+            ch->prn, toi, nerr, crcok ? "일치" : "불일치");
+    }
 
     if (nerr >= 0 && crcok)
     {

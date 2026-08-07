@@ -106,7 +106,7 @@ mingw32-make --version
 
 ### 윈도우에서 컴파일
 ```text
-cd O:\3.ing\LNIS\오픈소스\PocketSDR-AFS
+cd O:\3.ing\LNIS\LnisAfsValidator\오픈소스\PocketSDR-AFS-main\app\pocket_trk
 
 //윈도우 라이브러리 확인
 Get-ChildItem .\lib\win32
@@ -124,6 +124,37 @@ $env:OS = "Windows_NT"
 mingw32-make clean
 mingw32-make
 
+// libsdr.a 컴파일
+cd "O:\3.ing\LNIS\LnisAfsValidator\오픈소스\PocketSDR-AFS-main\lib\build"
+
+$env:Path = "C:\msys64\mingw64\bin;$env:Path"
+$env:OS = "Windows_NT"
+
+mingw32-make -f libsdr.mk libsdr.a
+
+Get-Item .\libsdr.a
+
+  Copy-Item `
+      -LiteralPath .\libsdr.a `
+      -Destination ..\win32\libsdr.a `
+      -Force
+      
+// 실행기 강제로 다시 링크
+  cd ..\..\app\pocket_trk
+  mingw32-make -B pocket_trk
+  
+// 시간 갱신 확인
+Get-Item ..\..\lib\win32\libsdr.a, .\pocket_trk.exe |
+Select-Object FullName, Length, LastWriteTime
+
 // 실행
-.\pocket_trk.exe -sig AFSD -prn 2-8 -sig AFSP -prn 2-8 -f 12 -IQ 2 -log log.txt "O:\3.ing\LNIS\LnisAfsValidator\오픈소스\LANS-AFS-SIM-main\90s_2qb.bin"
+cd O:\3.ing\LNIS\LnisAfsValidator\오픈소스\PocketSDR-AFS-main\app\pocket_trk
+
+.\pocket_trk.exe `
+      -sig AFSD -prn 2-8 `
+      -sig AFSP -prn 2-8 `
+      -f 12 `
+      -IQ 2 `
+      -log log.txt `
+      "O:\3.ing\LNIS\LnisAfsValidator\오픈소스\LANS-AFS-SIM-main\90s_2qb.bin"
 ```

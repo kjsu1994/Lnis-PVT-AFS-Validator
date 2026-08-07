@@ -839,6 +839,14 @@ void sdr_log(int level, const char *msg, ...)
     va_end(ap);
 }
 
+// 로그처리: 큰 AFS 상세 로그를 분할 flush 없이 기존 log.txt 스트림에 기록한다.
+void sdr_log_write(int level, const char *data, int size)
+{
+    if (level <= log_lvl && log_str && data && size > 0) {
+        strwrite(log_str, (uint8_t *)data, size);
+    }
+}
+
 // get log buffer --------------------------------------------------------------
 int sdr_get_log(char *buff, int size)
 {

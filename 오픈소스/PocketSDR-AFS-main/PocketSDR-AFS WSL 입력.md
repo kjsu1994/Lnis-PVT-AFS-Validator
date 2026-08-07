@@ -148,8 +148,6 @@ Get-Item ..\..\lib\win32\libsdr.a, .\pocket_trk.exe |
 Select-Object FullName, Length, LastWriteTime
 
 // 실행
-cd O:\3.ing\LNIS\LnisAfsValidator\오픈소스\PocketSDR-AFS-main\app\pocket_trk
-
 .\pocket_trk.exe `
       -sig AFSD -prn 2-8 `
       -sig AFSP -prn 2-8 `

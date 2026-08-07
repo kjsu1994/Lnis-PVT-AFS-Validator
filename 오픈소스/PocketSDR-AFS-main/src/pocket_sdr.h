@@ -314,6 +314,8 @@ int sdr_log_open(const char *path);
 void sdr_log_close(void);
 void sdr_log_level(int level);
 void sdr_log(int level, const char *msg, ...);
+// 로그처리: 큰 상세 로그를 기존 로그 스트림에 한 번의 쓰기로 기록한다.
+void sdr_log_write(int level, const char *data, int size);
 int sdr_get_log(char *buff, int size);
 int sdr_parse_nums(const char *str, int *prns);
 void sdr_add_buff(void *buff, int len_buff, void *item, size_t size_item);

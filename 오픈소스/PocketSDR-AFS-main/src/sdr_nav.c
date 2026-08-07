@@ -128,7 +128,10 @@ static void log_AFS_rx_bits(const char* id, int prn, int toi, int sb,
 {
     static const char hex_tbl[] = "0123456789ABCDEF";
     char bitstr[257], hex[65];
-    int off, n, i, j, v, erasure;
+    int off, n, i, j, v, erasure, pos = 0;
+    int text_size = len * 2 + 8192;
+    // 로그처리: 한 단계의 모든 조각을 모아 한 번만 파일에 쓰기 위한 버퍼를 할당한다.
+    char* text = (char*)sdr_malloc(text_size);
 
     pthread_mutex_lock(&afs_log_mtx);
     for (off = 0; off < len; off += 256) {
@@ -145,12 +148,16 @@ static void log_AFS_rx_bits(const char* id, int prn, int toi, int sb,
             hex[i / 4] = hex_tbl[v];
         }
         hex[(n + 3) / 4] = '\0';
-        sdr_log(3, "[수신][비교ID=%s][PRN=%02d][TOI=%02d][SB%02d][단계=%s][길이=%d][비트범위=%04d-%04d]",
-            id, prn, toi, sb, stage, len, off, off + n - 1);
-        sdr_log(3, "비트=%s", bitstr);
-        sdr_log(3, "16진수=%s", erasure ? "해당없음(erasure 포함)" : hex);
+        pos += snprintf(text + pos, text_size - pos,
+            "[수신][비교ID=%s][PRN=%02d][TOI=%02d][SB%02d][단계=%s][길이=%d][비트범위=%04d-%04d]\r\n"
+            "비트=%s\r\n16진수=%s\r\n",
+            id, prn, toi, sb, stage, len, off, off + n - 1, bitstr,
+            erasure ? "해당없음(erasure 포함)" : hex);
     }
+    // 로그처리: 조립된 단계별 로그 전체를 기존 log.txt에 한 번의 쓰기로 기록한다.
+    sdr_log_write(3, text, pos);
     pthread_mutex_unlock(&afs_log_mtx);
+    sdr_free(text);
 }
 
 // 로그처리: 복호 데이터의 수신 CRC24와 재계산 CRC24를 한글 판정과 함께 기록한다.

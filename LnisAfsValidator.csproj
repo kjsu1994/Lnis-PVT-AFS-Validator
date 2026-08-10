@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AssemblyName>LnisAfsValidator</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
@@ -15,5 +17,23 @@
     <EmbeddedResource Remove="Tests\**" />
     <None Remove="Tests\**" />
     <None Remove="README.md" />
+  </ItemGroup>
+  <ItemGroup Condition="Exists('Native\LnisAfsCodec\bin\win-x64\LnisAfsCodec.dll')">
+    <Content Include="Native\LnisAfsCodec\bin\win-x64\LnisAfsCodec.dll">
+      <Link>LnisAfsCodec.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Native\LnisAfsCodec\THIRD-PARTY-NOTICES.txt">
+      <Link>licenses\THIRD-PARTY-NOTICES.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="오픈소스\LANS-AFS-SIM-main\LICENSE.txt">
+      <Link>licenses\LANS-AFS-SIM-LICENSE.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="오픈소스\PocketSDR-AFS-main\README.md">
+      <Link>licenses\PocketSDR-AFS-README-LICENSE.md</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

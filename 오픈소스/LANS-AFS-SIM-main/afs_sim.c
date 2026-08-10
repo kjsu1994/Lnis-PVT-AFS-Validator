@@ -1231,7 +1231,7 @@ int main(int argc, char** argv)
 
     //AFS Frame Data 생성
     // Insert synchronization pattern 
-
+    // SP(Synchronization Pattern) 68비트 고정패턴
     const uint8_t sync[9] ={0xCC, 0x63, 0xF7, 0x45, 0x36, 0xF4, 0x9E, 0x04, 0xA0}; // left justified
 
     for (i = 0; i < nsat; i++) {

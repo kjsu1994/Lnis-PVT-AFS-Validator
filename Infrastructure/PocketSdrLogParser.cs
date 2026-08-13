@@ -1,6 +1,7 @@
 using System.Globalization;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>PocketSDR 출력 로그에서 획득 PRN, subframe 복호, 오류와 PVT 증거를 추출한다.</summary>
 public sealed class PocketSdrLogParser : IReceiverLogParser
 {
     public ReceiverEvidence Parse(IEnumerable<string> lines)

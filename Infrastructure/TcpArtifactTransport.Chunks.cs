@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Net.Sockets;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+// TcpArtifactTransport의 파일 chunk 송수신과 전송량 검증을 구현한다.
 public sealed partial class TcpArtifactTransport
 {
     private static async Task SendChunksAsync(NetworkStream stream, string path, TransferManifest m, IProgress<RunProgress>? progress, CancellationToken token)

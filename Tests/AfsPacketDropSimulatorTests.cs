@@ -2,6 +2,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>UDP 드롭 결정의 seed 재현성과 경계 비율을 검증한다.</summary>
 public sealed class AfsPacketDropSimulatorTests
 {
     [Fact]

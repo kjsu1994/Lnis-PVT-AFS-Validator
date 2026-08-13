@@ -3,13 +3,19 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>
+/// LnisAfsCodec 네이티브 DLL의 C ABI를 IAfsFrameCodec 인터페이스로 제공한다.
+/// 입력과 출력의 bit 배열은 각 바이트가 0 또는 1 값을 갖는 unpacked 형식이다.
+/// </summary>
 public sealed class AfsNativeCodec : IAfsFrameCodec
 {
     private const string Library = "LnisAfsCodec";
+    // 네이티브 LDPC 구현의 전역 상태를 동시에 사용하지 않도록 DLL 호출을 직렬화한다.
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
     public AfsNativeCodec()
     {
+        // 관리 코드가 기대하는 구조체와 함수 규약이 DLL 버전 1과 일치하는지 먼저 확인한다.
         var version = Native.GetAbiVersion();
         if (version != 1) throw new NotSupportedException($"Unsupported LnisAfsCodec ABI {version}.");
     }

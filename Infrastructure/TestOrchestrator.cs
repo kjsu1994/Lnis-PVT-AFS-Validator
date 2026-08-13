@@ -1,5 +1,6 @@
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>역할별 IQ 생성, TCP 전송, 수신기 처리, 판정과 결과 저장 순서를 조정한다.</summary>
 public sealed class TestOrchestrator(ApplicationSettings settings)
 {
     private readonly IArtifactTransport transport = new TcpArtifactTransport();

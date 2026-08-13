@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>IQ artifact와 manifest, 검증 결과를 길이 제한이 있는 TCP 프로토콜로 교환한다.</summary>
 public sealed partial class TcpArtifactTransport : IArtifactTransport
 {
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("LAFSIQ01");
@@ -53,6 +54,7 @@ public sealed partial class TcpArtifactTransport : IArtifactTransport
         if (m.Format.FormatId != "PocketSDR.INT8X2") throw new InvalidDataException("Unsupported I/Q format.");
     }
 
+    // 연결과 NetworkStream의 수명을 하나의 비동기 disposable로 관리한다.
     private sealed class TcpConnection(TcpClient client) : IAsyncDisposable
     {
         public ValueTask DisposeAsync() { client.Dispose(); return ValueTask.CompletedTask; }

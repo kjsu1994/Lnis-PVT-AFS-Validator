@@ -1,5 +1,6 @@
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>프레임 sequence와 복제 번호를 seed에 결합하여 재현 가능한 UDP 드롭 여부를 결정한다.</summary>
 public static class AfsPacketDropSimulator
 {
     public static bool ShouldDrop(uint frameSequence, int copyIndex, double dropRatePercent, int seed)

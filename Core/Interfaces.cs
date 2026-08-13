@@ -1,4 +1,5 @@
 namespace LnisAfsValidator.Core;
+// 외부 도구 실행, 수신기 처리, 파일 전송과 결과 저장을 구현체와 분리하는 계약 모음이다.
 public interface IIqDataSource { Task<(IqArtifact Artifact, GeneratorBaseline Baseline, ProcessRunResult Process)> AcquireAsync(TestScenario scenario, string runDirectory, IProgress<RunProgress>? progress, Action<ProcessLogLine>? log, CancellationToken token); }
 public interface IAfsReceiverAdapter { Task<(ReceiverEvidence Evidence, ProcessRunResult Process, string RawLogPath)> ProcessAsync(IqArtifact artifact, TestScenario scenario, string runDirectory, IProgress<RunProgress>? progress, Action<ProcessLogLine>? log, CancellationToken token); }
 public interface IReceiverLogParser { ReceiverEvidence Parse(IEnumerable<string> lines); }

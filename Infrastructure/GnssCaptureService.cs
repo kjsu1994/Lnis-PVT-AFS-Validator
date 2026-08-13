@@ -5,6 +5,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>GNSS source를 읽어 정규화 레코드 파일, 원본 UBX와 manifest를 생성한다.</summary>
 public sealed class GnssCaptureService(IGnssRawCodec? rawCodec = null) : IGnssCaptureService
 {
     private readonly IGnssRawCodec codec = rawCodec ?? new GnssRawBinaryCodec();
@@ -76,6 +77,7 @@ public sealed class GnssCaptureService(IGnssRawCodec? rawCodec = null) : IGnssCa
     }
 }
 
+/// <summary>길이 prefix가 붙은 정규화 GNSS 레코드 파일을 순차적으로 읽는다.</summary>
 public static class GnssCanonicalFile
 {
     public static async IAsyncEnumerable<GnssRawEnvelope> ReadAsync(string path, IGnssRawCodec? codec = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken token = default)

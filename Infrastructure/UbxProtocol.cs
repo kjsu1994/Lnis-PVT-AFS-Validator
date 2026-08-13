@@ -4,8 +4,10 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>검증된 UBX class, id와 payload를 보관한다.</summary>
 public sealed record UbxFrame(byte MessageClass, byte MessageId, byte[] Payload);
 
+/// <summary>바이트 스트림에서 UBX sync, 길이와 checksum을 검사해 완전한 프레임을 추출한다.</summary>
 public sealed class UbxFrameParser
 {
     private readonly List<byte> buffer = [];
@@ -31,6 +33,7 @@ public sealed class UbxFrameParser
     }
 }
 
+/// <summary>지원하는 UBX 메시지를 프로그램의 정규화 GNSS RAW 모델로 변환한다.</summary>
 public sealed class UbxGnssMapper(Guid testId, string receiverModel, string firmwareVersion, string portName, int baudRate, string sessionName)
 {
     private ulong sequence;
@@ -75,6 +78,7 @@ public sealed class UbxGnssMapper(Guid testId, string receiverModel, string firm
     private static float F32(ReadOnlySpan<byte> p) => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(p));
 }
 
+/// <summary>Stream에서 UBX 데이터를 읽고 parser가 완성한 프레임을 비동기로 반환한다.</summary>
 public static class UbxStreamReader
 {
     public static async IAsyncEnumerable<UbxFrame> ReadAsync(Stream stream, UbxFrameParser parser, Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask>? rawSink = null, Action<int>? bytesRead = null, [EnumeratorCancellation] CancellationToken token = default)

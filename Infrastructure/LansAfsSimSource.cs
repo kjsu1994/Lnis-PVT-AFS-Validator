@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>LANS-AFS-SIM을 실행하여 시험용 IQ 파일과 생성 기준 정보를 확보한다.</summary>
 public sealed partial class LansAfsSimSource(ToolConfiguration config, ExternalProcessRunner runner, TimeSpan timeout) : IIqDataSource
 {
     public async Task<(IqArtifact, GeneratorBaseline, ProcessRunResult)> AcquireAsync(TestScenario s, string runDirectory, IProgress<RunProgress>? progress, Action<ProcessLogLine>? log, CancellationToken token)

@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 
-/* Implemented by the unmodified upstream sources/libraries. */
+/* 수정하지 않은 upstream 소스/라이브러리가 제공하는 AFS 함수 선언이다. */
 void encode_LDPC_AFS_SF2(const uint8_t *syms, uint8_t *syms_enc);
 void encode_LDPC_AFS_SF3(const uint8_t *syms, uint8_t *syms_enc);
 void append_CRC24(uint8_t *syms, int len);
@@ -13,6 +13,7 @@ int sdr_decode_LDPC_AFS_SF3(const uint8_t *syms, uint8_t *syms_dec);
 
 #define ERASURE 2
 static _Thread_local char last_error[160];
+/* AFS 동기 패턴 68비트를 MSB-first로 보관하며 마지막 4비트는 사용하지 않는다. */
 static const uint8_t sync_bytes[9] = {0xCC,0x63,0xF7,0x45,0x36,0xF4,0x9E,0x04,0xA0};
 
 static int fail(const char *message) {
@@ -22,11 +23,13 @@ static int fail(const char *message) {
 }
 
 static void unpack(const uint8_t *bytes, int bit_count, uint8_t *bits) {
+    /* 패킹된 바이트를 각 원소가 0/1인 비트 배열로 변환한다. */
     int i;
     for (i = 0; i < bit_count; ++i) bits[i] = (bytes[i >> 3] >> (7 - (i & 7))) & 1u;
 }
 
 static void pack(const uint8_t *bits, int bit_count, uint8_t *bytes) {
+    /* 0/1 비트 배열을 전송용 MSB-first 바이트 배열로 패킹한다. */
     int i;
     memset(bytes, 0, (size_t)((bit_count + 7) / 8));
     for (i = 0; i < bit_count; ++i) bytes[i >> 3] |= (uint8_t)((bits[i] & 1u) << (7 - (i & 7)));

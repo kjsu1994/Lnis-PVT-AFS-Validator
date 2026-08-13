@@ -1,5 +1,6 @@
 using LnisAfsValidator.Infrastructure;
 namespace LnisAfsValidator.Tests;
+/// <summary>PocketSDR 로그에서 수신 증거와 경고가 정확히 추출되는지 검증한다.</summary>
 public sealed class ParserTests
 {
     [Fact] public void ParsesConfirmedAfsRecordsAndUsesFinalNsatField()

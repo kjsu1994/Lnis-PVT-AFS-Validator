@@ -9,8 +9,10 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.App;
 
+/// <summary>GNSS 데이터를 시리얼 포트에서 받을지 저장 파일에서 재생할지 구분한다.</summary>
 public enum GnssCaptureMode { Serial, FileReplay }
 
+/// <summary>GNSS 캡처 입력 설정, 실행·취소 명령, 통계와 로그 표시를 관리한다.</summary>
 public sealed class GnssCaptureViewModel : INotifyPropertyChanged
 {
     private readonly IGnssCaptureService service = new GnssCaptureService();

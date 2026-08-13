@@ -1,5 +1,6 @@
 namespace LnisAfsValidator.Core;
 
+// Test B/C 오류정정 반복시험의 입력, 개별 시행, 조건별 요약과 전체 결과 모델이다.
 public sealed record AfsErrorCorrectionExperimentSettings(
     AfsErrorInjectionMode Mode,
     IReadOnlyList<int> ErrorCounts,

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>시험별 결과 디렉터리를 만들고 설정, 로그와 최종 결과를 파일로 저장한다.</summary>
 public sealed class RunStore(string root) : IRunStore
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };

@@ -5,6 +5,7 @@
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="3"/><Setter Property="Padding" Value="4"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="14,7"/></Style>
   </Window.Resources>
+  <!-- 역할·네트워크, 입력·판정 기준, 측정 결과와 실행 상태를 위에서 아래 순서로 배치한다. -->
   <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <GroupBox Header="실행 역할"><ComboBox ItemsSource="{Binding Roles}" SelectedItem="{Binding Role}"/></GroupBox>

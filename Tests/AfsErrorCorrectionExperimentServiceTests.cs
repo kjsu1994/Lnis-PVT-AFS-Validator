@@ -3,6 +3,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>가짜 코덱으로 오류정정 반복시험의 집계와 결과 파일 생성을 검증한다.</summary>
 public sealed class AfsErrorCorrectionExperimentServiceTests
 {
     [Fact]

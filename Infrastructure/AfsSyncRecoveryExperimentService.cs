@@ -5,6 +5,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>Test D의 정상·손상·정상 3프레임 스트림을 만들고 다음 정상 SP와 프레임 복구를 측정한다.</summary>
 public sealed class AfsSyncRecoveryExperimentService(Func<IAfsFrameCodec>? codecFactory = null)
 {
     private readonly Func<IAfsFrameCodec> codecFactory = codecFactory ?? (() => new AfsNativeCodec());

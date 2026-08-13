@@ -4,6 +4,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>저장된 UBX 파일을 GNSS RAW envelope 스트림으로 제공한다.</summary>
 public sealed class FileUbxGnssRawSource(string path, Guid testId, string sessionName) : IGnssRawSource
 {
     public async IAsyncEnumerable<GnssRawEnvelope> ReadAsync([EnumeratorCancellation] CancellationToken token)
@@ -13,6 +14,7 @@ public sealed class FileUbxGnssRawSource(string path, Guid testId, string sessio
     }
 }
 
+/// <summary>지정한 시리얼 포트에서 UBX 메시지를 실시간으로 읽는다.</summary>
 public sealed class SerialUbxGnssRawSource(string portName, int baudRate, Guid testId, string sessionName) : IGnssRawSource
 {
     public async IAsyncEnumerable<GnssRawEnvelope> ReadAsync([EnumeratorCancellation] CancellationToken token)

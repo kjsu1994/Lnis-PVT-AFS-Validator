@@ -6,6 +6,7 @@ using System.Net.Sockets;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>AFS fragment, UDP packet과 실제 네이티브 코덱의 종단 간 호환성을 검증한다.</summary>
 public sealed class AfsProtocolTests
 {
     [Theory]

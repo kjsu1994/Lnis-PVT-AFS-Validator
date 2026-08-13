@@ -1,5 +1,6 @@
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Tests;
+/// <summary>필수 검증 항목과 허용오차에 따른 Pass/Fail/Inconclusive 판정을 검증한다.</summary>
 public sealed class VerdictTests
 {
     [Fact] public void CompleteEvidencePasses()

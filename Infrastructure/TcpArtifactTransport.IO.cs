@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Text.Json;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+// TcpArtifactTransport에서 사용하는 고정 길이 숫자와 JSON 메시지 입출력을 구현한다.
 public sealed partial class TcpArtifactTransport
 {
     private static async Task WriteJsonAsync<T>(NetworkStream stream, T value, CancellationToken token)

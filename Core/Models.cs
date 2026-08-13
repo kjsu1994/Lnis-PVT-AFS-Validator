@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 namespace LnisAfsValidator.Core;
+// 기존 IQ 생성·전송·수신기 검증 경로에서 공유하는 실행 설정과 결과 모델이다.
 [JsonConverter(typeof(JsonStringEnumConverter))] public enum RunRole { Sender, Receiver, Local }
 [JsonConverter(typeof(JsonStringEnumConverter))] public enum ExecutionMode { Native, Wsl }
 [JsonConverter(typeof(JsonStringEnumConverter))] public enum Verdict { Pass, Fail, Inconclusive }

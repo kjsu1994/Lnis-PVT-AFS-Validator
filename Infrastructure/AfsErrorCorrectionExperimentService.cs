@@ -5,6 +5,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>Test B/C 조건별 AFS 오류 주입과 복호를 반복하고 바이너리·CSV·JSON 결과를 저장한다.</summary>
 public sealed class AfsErrorCorrectionExperimentService(Func<IAfsFrameCodec>? codecFactory = null)
 {
     private readonly Func<IAfsFrameCodec> codecFactory = codecFactory ?? (() => new AfsNativeCodec());

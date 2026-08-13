@@ -4,6 +4,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>UBX checksum 검사, 스트림 파싱과 GNSS 모델 변환을 검증한다.</summary>
 public sealed class UbxProtocolTests
 {
     [Fact]

@@ -2,8 +2,10 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>SB2 구성에 사용하는 단일 PRN almanac 항목이다.</summary>
 public sealed record AfsAlmanacEntry(int Prn, double Eccentricity, double ToeSeconds, double Inclination, double SqrtA, double RightAscension, double ArgumentOfPerigee, double MeanAnomaly, double Af0, double Af1, int Week);
 
+/// <summary>GPS 주차·ITOW와 PRN 8 almanac을 AFS SB2의 1176개 CRC 입력 비트로 구성한다.</summary>
 public static class AfsSb2Builder
 {
     private const double Pow2M32 = 2.3283064365386963e-10;

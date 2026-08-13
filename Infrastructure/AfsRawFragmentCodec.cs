@@ -3,6 +3,10 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>
+/// 가변 길이 GNSS RAW 레코드를 SB3/SB4에 넣을 수 있는 105바이트 블록으로 분할하고 복원한다.
+/// 각 블록은 19바이트 헤더와 최대 86바이트의 RAW payload로 구성된다.
+/// </summary>
 public static class AfsRawFragmentCodec
 {
     public const int BlockBytes = 105;
@@ -18,6 +22,7 @@ public static class AfsRawFragmentCodec
         if (record.IsEmpty) throw new InvalidDataException("GNSS RAW record is empty.");
         var count = checked((int)Math.Ceiling(record.Length / (double)PayloadBytes));
         if (count > ushort.MaxValue) throw new InvalidDataException("GNSS RAW record requires too many AFS fragments.");
+        // 모든 조각에 원본 레코드의 길이와 CRC32를 기록하여 재조립 완료 후 무결성을 확인한다.
         var crc = Hashing.Crc32(record); var result = new List<byte[]>(count);
         for (var i = 0; i < count; i++)
         {
@@ -48,6 +53,7 @@ public static class AfsRawFragmentCodec
 
     public static byte[] ToSbBits(ReadOnlySpan<byte> block, int messageType = CustomMessageType)
     {
+        // SB 데이터는 바이트 패킹이 아닌 값이 0 또는 1인 unpacked bit 배열을 사용한다.
         if (block.Length != BlockBytes || messageType is < 0 or > 63) throw new ArgumentOutOfRangeException(nameof(messageType));
         var bits = new byte[846]; for (var i = 0; i < 6; i++) bits[i] = (byte)((messageType >> (5 - i)) & 1);
         for (var i = 0; i < block.Length * 8; i++) bits[6 + i] = (byte)((block[i >> 3] >> (7 - (i & 7))) & 1);
@@ -67,6 +73,7 @@ public static class AfsRawFragmentCodec
 
 public sealed class AfsRawReassembler
 {
+    // 레코드 순서별로 조각을 보관하여 UDP 도착 순서와 무관하게 원래 순서로 복원한다.
     private readonly SortedDictionary<uint, RecordState> records = [];
 
     public void Add(AfsRawFragment fragment)

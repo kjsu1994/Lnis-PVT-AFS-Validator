@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 enum {
+    /* 관리 코드와 공유하는 ABI 버전 및 고정 AFS 블록 크기다. */
     LNIS_AFS_ABI_VERSION = 1,
     LNIS_AFS_FRAME_BITS = 6000,
     LNIS_AFS_FRAME_BYTES = 750,
@@ -22,6 +23,7 @@ enum {
 };
 
 typedef struct {
+    /* 블록별 CRC 검증 결과와 LDPC 복호기가 변경한 비트 수를 반환한다. */
     uint8_t sb2_ok;
     uint8_t sb3_ok;
     uint8_t sb4_ok;

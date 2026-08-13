@@ -2,6 +2,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>오류 개수 입력의 정상 변환, 정렬·중복 처리와 잘못된 값 거부를 검증한다.</summary>
 public sealed class AfsExperimentInputParserTests
 {
     [Fact]

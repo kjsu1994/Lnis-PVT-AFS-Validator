@@ -1,6 +1,7 @@
 using System.Globalization;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>PocketSDR-AFS로 IQ 파일을 처리하고 로그를 수신 증거 모델로 변환한다.</summary>
 public sealed class PocketSdrAfsAdapter(ToolConfiguration config, ExternalProcessRunner runner, IReceiverLogParser parser, TimeSpan timeout) : IAfsReceiverAdapter
 {
     public async Task<(ReceiverEvidence, ProcessRunResult, string)> ProcessAsync(IqArtifact artifact, TestScenario s, string runDirectory, IProgress<RunProgress>? progress, Action<ProcessLogLine>? log, CancellationToken token)

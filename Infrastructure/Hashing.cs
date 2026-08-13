@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>파일 SHA-256과 메모리 데이터 CRC32 계산을 제공한다.</summary>
 public static class Hashing
 {
     public static async Task<string> Sha256Async(string path, CancellationToken token)

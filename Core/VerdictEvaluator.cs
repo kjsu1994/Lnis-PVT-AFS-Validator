@@ -1,4 +1,5 @@
 namespace LnisAfsValidator.Core;
+/// <summary>전송, 외부 프로세스와 수신 증거를 시험 허용오차에 따라 최종 판정한다.</summary>
 public sealed class VerdictEvaluator : IVerdictEvaluator
 {
     public ValidationResult Evaluate(Guid id, TransferReceipt t, TestScenario s, GeneratorBaseline b, ReceiverEvidence? e, ProcessRunResult? p, bool cancelled = false)

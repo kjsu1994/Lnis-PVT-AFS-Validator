@@ -1,5 +1,6 @@
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>화면에서 쉼표로 입력한 오류 개수 목록을 검증된 정수 배열로 변환한다.</summary>
 public static class AfsExperimentInputParser
 {
     public static IReadOnlyList<int> ParseErrorCounts(string text)

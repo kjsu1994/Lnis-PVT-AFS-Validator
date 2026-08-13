@@ -1,5 +1,6 @@
 namespace LnisAfsValidator.Core;
 
+/// <summary>송신자가 SessionStart payload로 전달하는 원본 파일 및 세션 정보다.</summary>
 public sealed record AfsSessionManifest(
     Guid TestId,
     int ProtocolVersion,
@@ -17,6 +18,7 @@ public sealed record AfsSessionManifest(
     int SimulatedDropSeed = 1,
     long SimulatedDroppedDatagrams = 0);
 
+/// <summary>AFS 송수신 시험의 판정, 무결성 결과, 성능 지표와 저장 위치를 묶는다.</summary>
 public sealed record AfsSessionResult(
     Guid TestId,
     Verdict Verdict,

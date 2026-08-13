@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
+/// <summary>외부 실행 파일 또는 WSL 명령을 실행하고 출력, 종료 상태와 제한시간을 수집한다.</summary>
 public sealed class ExternalProcessRunner
 {
     public async Task<ProcessRunResult> RunAsync(ToolConfiguration config, IEnumerable<string> arguments, TimeSpan timeout, Action<ProcessLogLine>? sink, CancellationToken token)

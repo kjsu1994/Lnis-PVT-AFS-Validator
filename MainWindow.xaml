@@ -5,6 +5,7 @@
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="3"/><Setter Property="Padding" Value="4"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="14,7"/></Style>
   </Window.Resources>
+  <!-- 기존 IQ 생성·수신 도구 설정과 검증 결과를 한 화면에서 편집하고 확인한다. -->
   <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid Grid.Row="0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <GroupBox Header="시험 및 네트워크" Grid.Column="0"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>

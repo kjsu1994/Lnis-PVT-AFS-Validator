@@ -5,6 +5,7 @@
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="15,8"/></Style>
   </Window.Resources>
+  <!-- GNSS 입력 설정, 실시간 통계·로그와 캡처 제어 버튼을 배치한다. -->
   <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <GroupBox Header="입력 설정"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="250"/><ColumnDefinition Width="120"/><ColumnDefinition Width="250"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
       <TextBlock Text="입력 방식" VerticalAlignment="Center"/><ComboBox Grid.Column="1" ItemsSource="{Binding Modes}" SelectedItem="{Binding Mode}"/>

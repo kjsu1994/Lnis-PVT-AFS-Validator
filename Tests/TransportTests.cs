@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using LnisAfsValidator.Core;
 using LnisAfsValidator.Infrastructure;
 namespace LnisAfsValidator.Tests;
+/// <summary>TCP artifact 전송의 파일 내용, manifest, receipt와 결과 회신을 검증한다.</summary>
 public sealed class TransportTests
 {
     [Fact]

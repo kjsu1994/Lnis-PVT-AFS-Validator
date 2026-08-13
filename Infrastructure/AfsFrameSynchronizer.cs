@@ -1,5 +1,6 @@
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>비트 스트림에서 68심볼 AFS 동기 패턴을 찾고 해당 위치의 6000심볼 프레임을 추출한다.</summary>
 public static class AfsFrameSynchronizer
 {
     public const int SyncSymbolCount = 68;

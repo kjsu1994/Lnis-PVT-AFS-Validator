@@ -9,6 +9,7 @@ using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
 
+/// <summary>Test B/C/D 오류 실험과 Test E UDP 드롭 시험 화면의 입력과 실행 상태를 관리한다.</summary>
 public sealed class AfsErrorExperimentViewModel : INotifyPropertyChanged
 {
     private CancellationTokenSource? cancellation;

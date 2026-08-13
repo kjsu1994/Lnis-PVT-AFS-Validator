@@ -3,6 +3,10 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>
+/// AFS UDP 패킷을 고정 48바이트 헤더와 payload, CRC32 형식으로 직렬화하고 역직렬화한다.
+/// 다중 바이트 정수는 네트워크 전송 순서인 Big Endian으로 저장한다.
+/// </summary>
 public static class AfsPacketCodec
 {
     private static ReadOnlySpan<byte> Magic => "LAFS"u8;
@@ -20,6 +24,7 @@ public static class AfsPacketCodec
         BinaryPrimitives.WriteUInt16BigEndian(span[30..], packet.Week); BinaryPrimitives.WriteUInt16BigEndian(span[32..], packet.IntervalOfWeek);
         span[34] = packet.TimeOfInterval; span[35] = 0; BinaryPrimitives.WriteInt64BigEndian(span[36..], packet.SentUtcTicks);
         BinaryPrimitives.WriteUInt16BigEndian(span[44..], checked((ushort)packet.Payload.Length)); span[46] = span[47] = 0;
+        // 마지막 4바이트의 CRC32는 헤더와 payload 전체를 대상으로 계산한다.
         packet.Payload.CopyTo(span[HeaderLength..]); BinaryPrimitives.WriteUInt32BigEndian(span[^4..], Hashing.Crc32(span[..^4])); return output;
     }
 
@@ -40,6 +45,7 @@ public static class AfsPacketCodec
 
 public sealed class AfsPacketDeduplicator
 {
+    // CopyIndex는 키에 포함하지 않아 중복 송신된 같은 논리 패킷을 한 번만 수용한다.
     private readonly HashSet<(Guid TestId, AfsPacketKind Kind, uint Sequence)> received = [];
     public bool TryAccept(AfsPacket packet) => received.Add((packet.TestId, packet.Kind, packet.Sequence));
     public int Count => received.Count;

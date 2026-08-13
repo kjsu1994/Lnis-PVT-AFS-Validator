@@ -8,6 +8,10 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>
+/// Test A/E의 시간 동기, 세션 제어, AFS 프레임 송수신, RAW 재조립과 결과 반환을 담당한다.
+/// Frame만 선택적으로 드롭하며 세션 제어 패킷은 시험 종료를 위해 항상 전송한다.
+/// </summary>
 public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = null)
 {
     private readonly Func<IAfsFrameCodec> codecFactory = codecFactory ?? (() => new AfsNativeCodec());
@@ -15,6 +19,7 @@ public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = nu
 
     public async Task<AfsSessionResult> SendAsync(AfsTestSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
     {
+        // 원본 레코드 두 조각을 SB3/SB4에 배치하므로 한 AFS 프레임이 최대 두 fragment를 운반한다.
         Validate(test, network, true); var testId = Guid.NewGuid(); var records = await ReadRecordsAsync(test.CapturePath, token);
         var sourceHash = await Hashing.Sha256Async(test.CapturePath, token); var sourceLength = new FileInfo(test.CapturePath).Length;
         var (week, itow, toi) = TimeFrom(records); var almanac = AfsSb2Builder.ReadAlmanac(test.AlmanacPath, test.Prn);
@@ -66,6 +71,7 @@ public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = nu
 
     public async Task<AfsSessionResult> ReceiveAsync(AfsTestSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
     {
+        // 수신 측은 SessionStart의 원본 메타데이터를 기준으로 재조립 결과와 최종 해시를 검증한다.
         Validate(test, network, false); using var udp = new UdpClient(new IPEndPoint(IPAddress.Any, network.DataPort));
         AfsSessionManifest? manifest = null; var dedup = new AfsPacketDeduplicator(); var reassembler = new AfsRawReassembler();
         var latencies = new List<double>(); long datagrams = 0, duplicates = 0, corrupt = 0, probes = 0, probeResponses = 0; IPEndPoint? sender = null;

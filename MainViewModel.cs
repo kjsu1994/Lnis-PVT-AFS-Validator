@@ -9,6 +9,7 @@ using LnisAfsValidator.Core;
 using LnisAfsValidator.Infrastructure;
 namespace LnisAfsValidator.App;
 
+/// <summary>기존 IQ 기반 송신·수신·로컬 검증 화면의 설정과 실행 상태를 관리한다.</summary>
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     public GnssCaptureViewModel GnssCapture { get; } = new();

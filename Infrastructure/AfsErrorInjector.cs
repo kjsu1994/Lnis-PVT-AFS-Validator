@@ -2,6 +2,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>정상 AFS 프레임을 복사한 뒤 지정된 방식과 seed로 심볼을 반전한다.</summary>
 public static class AfsErrorInjector
 {
     public const int FrameSymbolCount = 6000;

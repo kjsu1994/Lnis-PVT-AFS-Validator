@@ -3,6 +3,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>비트 오프셋이 어긋난 스트림에서도 SP 탐색과 프레임 추출이 가능한지 검증한다.</summary>
 public sealed class AfsFrameSynchronizerTests
 {
     [Fact]

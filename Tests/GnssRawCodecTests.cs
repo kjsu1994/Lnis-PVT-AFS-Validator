@@ -3,6 +3,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>GNSS RAW 메시지별 바이너리 인코딩과 디코딩의 왕복 일치를 검증한다.</summary>
 public sealed class GnssRawCodecTests
 {
     [Fact]

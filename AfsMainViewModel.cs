@@ -10,6 +10,10 @@ using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
 
+/// <summary>
+/// AFS 검증 메인 화면의 입력값, 실행 명령, 진행 상태와 결과 표시를 관리한다.
+/// 실제 AFS 송수신과 오류정정 시험은 Infrastructure 계층의 서비스에 위임한다.
+/// </summary>
 public sealed class AfsMainViewModel : INotifyPropertyChanged
 {
     private CancellationTokenSource? cancellation;
@@ -51,6 +55,7 @@ public sealed class AfsMainViewModel : INotifyPropertyChanged
 
     private async Task StartAsync()
     {
+        // 한 번의 실행 동안 시작 명령을 비활성화하고 이전 실행의 화면 상태를 초기화한다.
         cancellation = new(); Refresh(); Error = ""; Verdict = "-"; Metrics.Clear(); Logs.Clear();
         try
         {
@@ -59,6 +64,8 @@ public sealed class AfsMainViewModel : INotifyPropertyChanged
             var test = new AfsTestSettings(CapturePath, AlmanacPath, root, Thresholds: thresholds); var network = new AfsTransportSettings(BroadcastAddress, DataPort, ResultPort, ResultTimeoutSeconds: ResultTimeoutSeconds);
             await SaveAsync(); var reporter = new Progress<AfsSessionProgress>(p => { State = $"{p.Stage}: {p.Message}"; Progress = p.Percent; Logs.Add($"{DateTime.Now:HH:mm:ss} {p.Message}"); });
             AfsSessionResult result;
+            // Sender와 Receiver는 서로 다른 PC에서 독립 실행할 수 있고,
+            // Local은 동일한 UDP 처리 경로를 루프백 주소로 한 프로세스 안에서 검증한다.
             if (Role == RunRole.Sender) result = await new AfsUdpSessionService().SendAsync(test, network, reporter, cancellation.Token);
             else if (Role == RunRole.Receiver) result = await new AfsUdpSessionService().ReceiveAsync(test, network, reporter, cancellation.Token);
             else
@@ -76,6 +83,7 @@ public sealed class AfsMainViewModel : INotifyPropertyChanged
     private void BrowseCapture() { var d = new OpenFileDialog { Filter = "GNSS RAW (*.graw)|*.graw|All files (*.*)|*.*" }; if (d.ShowDialog() == true) CapturePath = d.FileName; }
     private async Task StartFecAsync()
     {
+        // 오류정정 시험은 입력한 오류 개수별로 동일 조건을 반복하여 성공률을 집계한다.
         cancellation = new(); Refresh(); Error = ""; Verdict = "-"; Metrics.Clear(); Logs.Clear();
         try
         {

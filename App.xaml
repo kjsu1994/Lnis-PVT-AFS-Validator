@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:LnisAfsValidator.App"
              StartupUri="AfsDashboardWindow.xaml">
     <Application.Resources>
-         
+        <!-- 현재 공용 리소스는 없으며 시작 창은 StartupUri에서 지정한다. -->
     </Application.Resources>
 </Application>

@@ -3,6 +3,7 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.Tests;
 
+/// <summary>Random, Burst, SyncLoss 오류 위치와 seed 기반 재현성을 검증한다.</summary>
 public sealed class AfsErrorInjectorTests
 {
     [Fact]

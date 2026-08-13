@@ -8,6 +8,7 @@
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="15,8"/></Style>
   </Window.Resources>
+  <!-- 상단은 시험 조건, 중앙은 로그와 지표, 하단은 진행 상태와 명령 영역이다. -->
   <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <TabControl>
       <TabItem Header="Test B/C/D · AFS 오류정정·재동기">

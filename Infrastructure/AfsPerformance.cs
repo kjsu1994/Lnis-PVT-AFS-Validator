@@ -3,6 +3,7 @@ using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.Infrastructure;
 
+/// <summary>AFS 네트워크 계수에서 가용성, 지연, 처리량, 손실률과 전달률을 계산한다.</summary>
 public static class AfsPerformanceCalculator
 {
     public static IReadOnlyList<PerformanceMetric> Calculate(AfsNetworkCounters c, IReadOnlyDictionary<string, MetricThreshold>? thresholds = null)
@@ -43,6 +44,7 @@ public static class AfsPerformanceCalculator
     }
 }
 
+/// <summary>시험 실행 중 현재 프로세스의 CPU와 working set을 주기적으로 표본화한다.</summary>
 public sealed class ProcessResourceSampler : IAsyncDisposable
 {
     private readonly List<ResourceSample> samples = [];

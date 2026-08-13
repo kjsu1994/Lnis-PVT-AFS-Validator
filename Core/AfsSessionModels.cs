@@ -12,7 +12,10 @@ public sealed record AfsSessionManifest(
     ushort StartWeek,
     ushort StartIntervalOfWeek,
     byte StartTimeOfInterval,
-    long ClockOffsetTicks = 0);
+    long ClockOffsetTicks = 0,
+    double SimulatedDropRatePercent = 0,
+    int SimulatedDropSeed = 1,
+    long SimulatedDroppedDatagrams = 0);
 
 public sealed record AfsSessionResult(
     Guid TestId,

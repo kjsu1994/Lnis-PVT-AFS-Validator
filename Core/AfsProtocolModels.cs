@@ -22,7 +22,9 @@ public sealed record AfsTransportSettings(
     int RepeatCount = 3,
     int ResultTimeoutSeconds = 30,
     int EndGraceMilliseconds = 1000,
-    int ProbeIntervalMilliseconds = 1000);
+    int ProbeIntervalMilliseconds = 1000,
+    double SimulatedDropRatePercent = 0,
+    int SimulatedDropSeed = 1);
 
 public sealed record AfsTestSettings(
     string CapturePath,
@@ -41,4 +43,3 @@ public sealed record RawIntegrityResult(
     int ExpectedRecords,
     int ReconstructedRecords,
     string Detail);
-

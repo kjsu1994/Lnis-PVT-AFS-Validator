@@ -35,7 +35,8 @@ public sealed class AfsNativeCodec : IAfsFrameCodec
             var sb2 = new byte[1176]; var sb3 = new byte[846]; var sb4 = new byte[846];
             var result = Native.Decode((byte)toi, frame.ToArray(), (uint)frame.Length, sb2, 1176, sb3, 846, sb4, 846, out var status);
             if (result < 0) throw Error("decode", result);
-            return new(sb2, sb3, sb4, status.Sb2Ok != 0, status.Sb3Ok != 0, status.Sb4Ok != 0);
+            return new(sb2, sb3, sb4, status.Sb2Ok != 0, status.Sb3Ok != 0, status.Sb4Ok != 0,
+                status.Sb2Corrections, status.Sb3Corrections, status.Sb4Corrections);
         }
         finally { Gate.Release(); }
     }

@@ -16,6 +16,10 @@ public static class AfsPerformanceCalculator
         Add(PerformanceCategory.Network, "AverageLatency", "송신부터 수신까지 걸리는 평균 시간", "ms", c.AverageLatencyMilliseconds ?? (c.OneWayLatencyMilliseconds.Count == 0 ? null : c.OneWayLatencyMilliseconds.Average()), false);
         Add(PerformanceCategory.Network, "MaximumLatency", "시험 중 발생한 최대 전달 지연", "ms", c.MaximumLatencyMilliseconds ?? (c.OneWayLatencyMilliseconds.Count == 0 ? null : c.OneWayLatencyMilliseconds.Max()), false);
         Add(PerformanceCategory.Network, "Throughput", "단위 시간당 전달된 데이터량", "byte/s", goodput, true);
+        var attemptedDatagrams = c.SentDatagrams + c.SimulatedDroppedDatagrams;
+        var injectedDropRate = attemptedDatagrams == 0 ? 0 : 100.0 * c.SimulatedDroppedDatagrams / attemptedDatagrams;
+        metrics.Add(new(PerformanceCategory.Network, "InjectedUdpDropRate", "Test E에서 송신 직전에 의도적으로 제거한 Frame 데이터그램 비율", "%", injectedDropRate, MetricStatus.Measured,
+            Detail: $"설정값 {c.ConfiguredDropRatePercent:0.###}%, 제거 {c.SimulatedDroppedDatagrams}/{attemptedDatagrams}"));
         Add(PerformanceCategory.Routing, "PacketLossRate", "수신되지 않은 데이터 비율", "%", loss, false);
         Add(PerformanceCategory.Routing, "PacketDeliveryRate", "최종 수신 성공 비율", "%", delivery, true);
         NotApplicable(PerformanceCategory.Routing, "ReroutingTime", "새로운 경로가 적용되는 시간", "ms", "HDTN/대체 경로가 구성되지 않았습니다.");

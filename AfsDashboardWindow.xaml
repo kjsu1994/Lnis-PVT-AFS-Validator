@@ -5,7 +5,7 @@
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="3"/><Setter Property="Padding" Value="4"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="14,7"/></Style>
   </Window.Resources>
-  <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <GroupBox Header="실행 역할"><ComboBox ItemsSource="{Binding Roles}" SelectedItem="{Binding Role}"/></GroupBox>
       <GroupBox Grid.Column="1" Header="UDP 네트워크"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
@@ -27,13 +27,16 @@
         <StackPanel><CheckBox Content="최소 전달률 (%)" IsChecked="{Binding ApplyDelivery}"/><TextBox Text="{Binding MinimumDelivery}"/></StackPanel>
       </UniformGrid>
     </Grid></GroupBox>
-    <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition/></Grid.ColumnDefinitions>
+    <GroupBox Grid.Row="2" Header="AFS 오류·손실 실험">
+      <DockPanel><Button DockPanel.Dock="Right" Content="오류 실험 창 열기" Command="{Binding OpenErrorExperimentCommand}" Background="#175CD3" Foreground="White" FontWeight="SemiBold"/><TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Text="Test B/C 오류정정, Test D 재동기, Test E UDP Drop은 별도 창에서 조건별로 실행하고 실제 시험 파일을 저장합니다."/></DockPanel>
+    </GroupBox>
+    <Grid Grid.Row="3"><Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition/></Grid.ColumnDefinitions>
       <GroupBox Header="성능지표"><DataGrid ItemsSource="{Binding Metrics}" AutoGenerateColumns="False" IsReadOnly="True"><DataGrid.Columns>
-        <DataGridTextColumn Header="분류" Binding="{Binding Category}" Width="110"/><DataGridTextColumn Header="지표" Binding="{Binding Name}" Width="150"/><DataGridTextColumn Header="설명" Binding="{Binding Description}" Width="*"/><DataGridTextColumn Header="값" Binding="{Binding Value}" Width="110"/><DataGridTextColumn Header="단위" Binding="{Binding Unit}" Width="80"/><DataGridTextColumn Header="상태" Binding="{Binding Status}" Width="110"/>
+        <DataGridTextColumn Header="분류" Binding="{Binding Category}" Width="110"/><DataGridTextColumn Header="지표" Binding="{Binding Name}" Width="240"/><DataGridTextColumn Header="설명" Binding="{Binding Description}" Width="*"/><DataGridTextColumn Header="값" Binding="{Binding Value}" Width="110"/><DataGridTextColumn Header="단위" Binding="{Binding Unit}" Width="80"/><DataGridTextColumn Header="상태" Binding="{Binding Status}" Width="110"/>
       </DataGrid.Columns></DataGrid></GroupBox>
       <GroupBox Grid.Column="1" Header="실행 로그"><ListBox ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="11" ScrollViewer.HorizontalScrollBarVisibility="Auto"/></GroupBox>
     </Grid>
-    <Grid Grid.Row="3" Margin="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <Grid Grid.Row="4" Margin="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="상태: " FontWeight="Bold"/><TextBlock Text="{Binding State}"/><TextBlock Text="   최종 판정: " FontWeight="Bold"/><TextBlock Text="{Binding Verdict}" FontSize="17" FontWeight="Bold"/><TextBlock Text="   "/><TextBlock Text="{Binding Error}" Foreground="#B42318"/></StackPanel><ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="16" Margin="0,5,10,0"/><TextBlock Text="{Binding RunDirectory}" Foreground="#667085"/></StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="시험 시작" Command="{Binding StartCommand}"/><Button Content="취소" Command="{Binding CancelCommand}"/><Button Content="결과 폴더" Command="{Binding OpenResultsCommand}"/></StackPanel>
     </Grid>

@@ -1,6 +1,9 @@
 namespace LnisAfsValidator.Core;
 
-public sealed record AfsDecodedFrame(byte[] Sb2Bits, byte[] Sb3Bits, byte[] Sb4Bits, bool Sb2Valid, bool Sb3Valid, bool Sb4Valid);
+public sealed record AfsDecodedFrame(
+    byte[] Sb2Bits, byte[] Sb3Bits, byte[] Sb4Bits,
+    bool Sb2Valid, bool Sb3Valid, bool Sb4Valid,
+    int Sb2Corrections = 0, int Sb3Corrections = 0, int Sb4Corrections = 0);
 
 public interface IAfsFrameCodec : IAsyncDisposable
 {
@@ -18,4 +21,3 @@ public sealed record AfsRawFragment(
     byte PayloadLength,
     uint RecordCrc32,
     byte[] Payload);
-

@@ -27,6 +27,8 @@ public sealed record AfsNetworkCounters(
     TimeSpan TransferDuration,
     IReadOnlyList<double> OneWayLatencyMilliseconds,
     double? AverageLatencyMilliseconds = null,
-    double? MaximumLatencyMilliseconds = null);
+    double? MaximumLatencyMilliseconds = null,
+    long SimulatedDroppedDatagrams = 0,
+    double ConfiguredDropRatePercent = 0);
 
 public sealed record ResourceSample(DateTimeOffset Timestamp, double CpuPercent, long WorkingSetBytes);

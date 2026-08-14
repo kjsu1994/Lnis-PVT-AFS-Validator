@@ -4,6 +4,8 @@
 
 LNIS AFS Validator는 GNSS RAW 데이터를 LunaNet AFS 프레임으로 부호화하여 UDP로 전송하고, 수신 측에서 다시 RAW로 복원해 데이터 무결성과 전송 성능을 검증하는 Windows용 .NET 8 WPF 프로그램이다.
 
+송신부는 기존 `capture.graw` 파일을 선택하거나 같은 화면의 GNSS COM 탭에서 Windows가 인식한 COM1, COM2 등의 포트를 선택해 원본 직렬 데이터를 받을 수 있다. 장비 프로토콜은 인터페이스로 분리되어 있으며, 실제 프로토콜이 결정되기 전에는 원본 `serial-input.bin`을 보존한다.
+
 정상 송수신뿐 아니라 AFS 오류정정 실험설계의 Test A~E를 실행할 수 있다.
 
 | 시험 | 내용 | 상태 |
@@ -36,7 +38,7 @@ capture.graw
 
 ## 프로그램 전체 동작 흐름
 
-프로그램을 실행하면 시작 화면에서 `송신부`, `수신부`, `오류정정 실험` 중 하나를 연다. 송수신 시험은 수신부를 먼저 대기시킨 다음 송신부를 실행하며, 오류정정 실험은 네트워크 없이 한 PC 안에서 수행한다.
+프로그램을 실행하면 시작 화면에서 `송신부`, `수신부`, `오류정정 실험` 중 하나를 연다. GNSS COM 수집은 별도 역할이 아니라 송신부의 입력 방법 중 하나다. 송수신 시험은 수신부를 먼저 대기시킨 다음 송신부를 실행하며, 오류정정 실험은 네트워크 없이 한 PC 안에서 수행한다.
 
 ```text
 LNIS AFS Validator 실행
@@ -46,7 +48,12 @@ LNIS AFS Validator 실행
         │
         ├─ 수신부 ───── UDP 포트 대기 ─────────────────────────────┐
         │                                                          │
-        ├─ 송신부 ───── capture.graw 선택                           │
+        ├─ 송신부 ─┬─ 기존 capture.graw 파일 선택                   │
+        │          │                                               │
+        │          └─ GNSS COM 입력 탭                             │
+        │               ├─ 활성 COM 포트·Baud rate 선택             │
+        │               ├─ 프로토콜 미정: serial-input.bin 보존     │
+        │               └─ 등록 어댑터: capture.graw 생성·자동 적용 │
         │                  │                                       │
         │                  ▼                                       │
         │             AFS 프레임 생성                              │
@@ -88,6 +95,25 @@ LNIS AFS Validator 실행
                               화면 표 + JSON + CSV
 ```
 
+### 송신부 GNSS COM 입력의 실제 순서
+
+1. 송신부의 `GNSS COM에서 수집` 탭을 열고 Windows가 현재 인식한 COM 포트 목록에서 장비 포트를 선택한다.
+2. 장비를 새로 연결했다면 `새로고침`으로 COM1, COM2 등의 활성 포트 목록을 다시 조회한다. 필요하면 포트 이름을 직접 입력할 수도 있다.
+3. Baud rate, DTR/RTS와 저장 폴더를 설정하고, 장비 프로토콜이 아직 정해지지 않았다면 `원본 바이트 저장(프로토콜 미정)`을 선택한다.
+4. 수집 서비스가 선택한 `SerialPort`를 열고 들어오는 모든 바이트를 변경 없이 `serial-input.bin`에 기록한다.
+5. 선택된 `IGnssDeviceProtocolAdapter`에도 같은 바이트 조각을 전달한다. COM 읽기와 장비별 해석은 서로 의존하지 않는다.
+6. 어댑터가 `ObservationEpochMessage`, `NavigationUpdateMessage` 등을 반환할 수 있을 때만 정규화 `capture.graw`를 생성한다.
+7. 수집이 끝나면 생성된 `capture.graw` 경로가 같은 송신부의 AFS 입력 경로에 자동 적용된다.
+
+현재 등록된 어댑터:
+
+| ID | 목적 | `capture.graw` 생성 |
+|---|---|---|
+| `raw-only` | 아직 모르는 장비 프로토콜의 원본 직렬 바이트 보존 | 아니요 |
+| `lnis-canonical-v1` | 시험 및 외부 변환기 연동용 4바이트 길이 + LGRW v1 스트림 | 예 |
+
+특정 제조사의 UBX나 다른 바이너리 프로토콜은 아직 선택하지 않았다. 장비가 결정되면 `IGnssDeviceProtocolAdapter`를 구현하고 `GnssProtocolAdapterCatalog`에 등록한다. 기존 COM 수집 패널, 송신부 ViewModel과 AFS 송신 코드는 변경할 필요가 없다.
+
 ### 송수신 시험의 실제 순서
 
 1. 수신 PC에서 수신부 창을 열고 데이터 포트와 결과 포트를 확인한 뒤 `수신 대기`를 누른다.
@@ -119,7 +145,7 @@ Test A는 송신부 Drop Rate를 0%로 실행한다. Test E는 같은 흐름에�
 
 프로그램 시작 시 `AfsDashboardWindow`에서 다음 독립 창을 선택한다.
 
-- `송신부`: `capture.graw`와 내부 SB2 검증 패턴으로 AFS 프레임을 만들고 UDP Broadcast로 전송한다. Drop Rate 0%는 Test A, 0% 초과는 Test E다.
+- `송신부`: 기존 `capture.graw` 파일을 선택하거나 같은 화면의 GNSS COM 탭에서 RAW를 수집한 뒤, 내부 SB2 검증 패턴과 함께 AFS 프레임을 만들어 UDP Broadcast한다. Drop Rate 0%는 Test A, 0% 초과는 Test E다.
 - `수신부`: 별도 입력 파일 없이 UDP를 대기하고 AFS 복호, RAW 복원, 무결성·성능 판정을 수행한다.
 - `오류정정 실험`: 네트워크와 분리된 Test B/C CRC·LDPC·인터리빙 성능과 Test D 재동기를 측정한다.
 
@@ -520,6 +546,8 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 자동검증 항목:
 
 - GNSS RAW 직렬화 왕복
+- 분할된 COM 바이트 스트림의 원본 무손실 저장
+- 프로토콜 미정 모드와 Canonical 어댑터의 `capture.graw` 생성 조건
 - RAW Fragment 분할·재조립·CRC32
 - UDP packet encode/decode와 손상 검출
 - 논리 프레임 손실률·전달률·지연
@@ -532,7 +560,7 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 - 다음 정상 프레임 Decode 복구
 - Seed 기반 UDP Drop 재현성
 
-현재 레거시 WSL/IQ 전용 테스트를 제거한 뒤 전체 자동 테스트는 26개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
+현재 레거시 WSL/IQ 전용 테스트를 제거한 뒤 전체 자동 테스트는 28개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
 
 실제 WPF 프로세스를 송신부와 수신부로 각각 실행한 인수시험에서도 임시 GNSS RAW 파일의 길이와 SHA-256이 복원 파일과 일치했다. Test E는 3회 중복 송신에서 계획된 데이터그램 1개를 제거하고도 복원에 성공했으며, Random/Burst/SyncLoss 화면 시험 결과도 JSON·CSV로 생성됨을 확인했다.
 
@@ -566,6 +594,21 @@ Presentation/Sender/
 
 Presentation/Receiver/
   AFS 수신·RAW 복원 XAML과 ViewModel
+
+Presentation/Gnss/
+  송신부에 삽입되는 COM 포트 설정·수집 현황 패널과 하위 ViewModel
+
+Core/Gnss/GnssCaptureAbstractions.cs
+  바이트 소스·프로토콜 어댑터·캡처 서비스 인터페이스
+
+Infrastructure/Gnss/Sources/SerialPortGnssByteSource.cs
+  제조사 중립 SerialPort 입력
+
+Infrastructure/Gnss/Protocols/GnssProtocolAdapters.cs
+  Raw-only·Canonical 어댑터와 확장 카탈로그
+
+Infrastructure/Gnss/Capture/GnssComCaptureService.cs
+  원본 Serial 보존과 선택적 capture.graw 기록
 
 AfsErrorExperimentWindow.xaml
   코덱 처리 사슬과 Test B/C/D 결과 표
@@ -609,6 +652,8 @@ Native/LnisAfsCodec/
 
 ## 17. 제한사항
 
+- 실제 GNSS 장비 프로토콜은 아직 결정되지 않아 제조사별 어댑터가 없다. 현재 실제 COM 장비는 원본 바이트 보존까지 보장한다.
+- `capture.graw` 생성에는 해당 장비 프로토콜을 해석하는 `IGnssDeviceProtocolAdapter` 구현이 필요하다.
 - PRN 8 단일 논리 AFS 스트림만 지원한다.
 - 수신기는 한 대만 지원한다.
 - Test D 복구시간은 2ms/symbol을 적용한 논리시간이다.

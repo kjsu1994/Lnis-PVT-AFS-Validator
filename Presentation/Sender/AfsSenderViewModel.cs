@@ -7,7 +7,7 @@ using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
 
-/// <summary>Test A 정상 송신과 Test E UDP Frame Drop 송신만 담당한다.</summary>
+/// <summary>파일 또는 COM으로 준비한 GNSS RAW를 Test A/E AFS 프레임으로 송신한다.</summary>
 public sealed class AfsSenderViewModel : ObservableViewModel
 {
     private readonly IAfsSessionService sessionService;
@@ -31,14 +31,17 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     public double Progress { get => progress; private set => Set(ref progress, value); }
     public ObservableCollection<PerformanceMetric> Metrics { get; } = [];
     public ObservableCollection<string> Logs { get; } = [];
+    public GnssCaptureViewModel GnssCapture { get; }
     public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand BrowseCaptureCommand { get; }
     public ICommand OpenResultsCommand { get; }
 
-    public AfsSenderViewModel(IAfsSessionService? sessionService = null)
+    public AfsSenderViewModel(IAfsSessionService? sessionService = null, GnssCaptureViewModel? gnssCapture = null)
     {
         this.sessionService = sessionService ?? new AfsUdpSessionService();
+        GnssCapture = gnssCapture ?? new GnssCaptureViewModel();
+        GnssCapture.CanonicalCaptureReady += (_, path) => CapturePath = path;
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null);
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
         BrowseCaptureCommand = new RelayCommand(BrowseCapture, () => cancellation is null);

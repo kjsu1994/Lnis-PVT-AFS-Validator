@@ -1,10 +1,15 @@
-<Window x:Class="LnisAfsValidator.App.AfsSenderWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="LNIS AFS 송신부" Width="1280" Height="820" MinWidth="1000" MinHeight="680" Background="#F3F5F8">
+<Window x:Class="LnisAfsValidator.App.AfsSenderWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:LnisAfsValidator.App" Title="LNIS AFS 송신부" Width="1420" Height="940" MinWidth="1120" MinHeight="760" Background="#F3F5F8">
   <Window.Resources><Style TargetType="GroupBox"><Setter Property="Margin" Value="6"/><Setter Property="Padding" Value="10"/><Setter Property="Background" Value="White"/></Style><Style TargetType="TextBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style><Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="14,7"/></Style></Window.Resources>
   <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <!-- 송신부는 RAW 입력만 요구하며 SB2는 내부 검증 패턴으로 생성한다. -->
-    <GroupBox Header="AFS 입력"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="capture.graw" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding CapturePath}"/><Button Grid.Column="2" Content="찾아보기" Command="{Binding BrowseCaptureCommand}"/>
-    </Grid></GroupBox>
+    <!-- 송신 입력은 기존 파일 선택과 COM 수집을 한 송신부 화면에서 준비한다. -->
+    <TabControl Margin="6">
+      <TabItem Header="기존 capture.graw 파일">
+        <Grid Margin="8"><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="송신 RAW 파일" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding CapturePath}"/><Button Grid.Column="2" Content="찾아보기" Command="{Binding BrowseCaptureCommand}"/></Grid>
+      </TabItem>
+      <TabItem Header="GNSS COM에서 수집">
+        <local:GnssCapturePanel DataContext="{Binding GnssCapture}"/>
+      </TabItem>
+    </TabControl>
     <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <GroupBox Header="UDP Broadcast · 한 AFS 프레임/한 데이터그램"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
         <TextBlock Text="Broadcast 주소" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding BroadcastAddress}"/><TextBlock Grid.Row="1" Text="데이터 포트" VerticalAlignment="Center"/><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DataPort}"/><TextBlock Grid.Row="2" Text="결과 포트" VerticalAlignment="Center"/><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ResultPort}"/><TextBlock Grid.Row="3" Text="중복 송신 횟수" VerticalAlignment="Center"/><TextBox Grid.Row="3" Grid.Column="1" Text="{Binding RepeatCount}"/><TextBlock Grid.Row="4" Text="결과 대기(초)" VerticalAlignment="Center"/><TextBox Grid.Row="4" Grid.Column="1" Text="{Binding ResultTimeoutSeconds}"/>

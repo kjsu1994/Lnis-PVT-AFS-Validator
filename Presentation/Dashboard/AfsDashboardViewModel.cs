@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace LnisAfsValidator.App;
 
-/// <summary>송신부·수신부·코덱 실험 창만 여는 시작 화면 모델이다.</summary>
+/// <summary>송신부·수신부·코덱 실험 창을 독립적으로 여는 시작 화면 모델이다.</summary>
 public sealed class AfsDashboardViewModel
 {
     public ICommand OpenSenderCommand { get; }

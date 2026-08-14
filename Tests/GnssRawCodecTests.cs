@@ -24,7 +24,7 @@ public sealed class GnssRawCodecTests
         GnssRawEnvelope[] values =
         [
             new(1, id, Guid.NewGuid(), 1, DateTimeOffset.UnixEpoch, new NavigationUpdateMessage(GnssConstellation.Galileo, 4, 1, 0, 2, [0x01020304, 0xAABBCCDD])),
-            new(1, id, Guid.NewGuid(), 2, DateTimeOffset.UnixEpoch, new ReceiverMetadataMessage("u-blox ZED-F9P", "unknown", "COM3", 115200, "test"))
+            new(1, id, Guid.NewGuid(), 2, DateTimeOffset.UnixEpoch, new ReceiverMetadataMessage("Generic GNSS Receiver", "unknown", "COM3", 115200, "test"))
         ];
         foreach (var value in values)
         {

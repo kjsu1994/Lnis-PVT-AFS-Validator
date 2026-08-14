@@ -67,8 +67,8 @@ public sealed record ReceiverMetadataMessage(
 public sealed record GnssCaptureStatistics(
     long BytesRead,
     long ValidFrames,
-    long RawxFrames,
-    long SfrbxFrames,
+    long ObservationEpochs,
+    long NavigationUpdates,
     long ChecksumErrors,
     long UnsupportedFrames,
     long UnsupportedConstellations,
@@ -77,5 +77,5 @@ public sealed record GnssCaptureStatistics(
 /// <summary>GNSS RAW 처리 진행률 메시지와 현재 통계다.</summary>
 public sealed record GnssCaptureProgress(GnssCaptureStatistics Statistics, string Message);
 /// <summary>GNSS RAW 처리 산출물 경로와 최종 상태다.</summary>
-public sealed record GnssCaptureResult(string Directory, string RawUbxPath, string CanonicalPath, string ManifestPath, GnssCaptureStatistics Statistics, bool Completed, string? Error);
+public sealed record GnssCaptureResult(string Directory, string RawSerialPath, string CanonicalPath, string ManifestPath, GnssCaptureStatistics Statistics, bool Completed, string? Error);
 

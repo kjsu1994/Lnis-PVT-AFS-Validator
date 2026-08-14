@@ -10,4 +10,5 @@ public sealed record AfsErrorInjectionSettings(
     int Seed = 1,
     bool IncludeSyncAndSb1 = false);
 
+/// <summary>반전 적용된 750바이트 프레임과 실제 심볼 인덱스 목록이다.</summary>
 public sealed record AfsErrorInjectionResult(byte[] Frame, IReadOnlyList<int> FlippedSymbolIndices);

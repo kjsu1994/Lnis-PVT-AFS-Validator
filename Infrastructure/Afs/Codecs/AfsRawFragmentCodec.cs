@@ -71,6 +71,7 @@ public static class AfsRawFragmentCodec
     }
 }
 
+/// <summary>SB3/SB4에서 복호한 RAW fragment를 원래 레코드 순서로 재조립한다.</summary>
 public sealed class AfsRawReassembler
 {
     // 레코드 순서별로 조각을 보관하여 UDP 도착 순서와 무관하게 원래 순서로 복원한다.

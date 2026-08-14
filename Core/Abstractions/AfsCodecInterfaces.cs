@@ -13,6 +13,13 @@ public interface IAfsFrameCodec : IAsyncDisposable
     Task<AfsDecodedFrame> DecodeAsync(int toi, ReadOnlyMemory<byte> frame, CancellationToken token);
 }
 
+/// <summary>Test A/E UDP 송수신을 UI와 분리하는 역할별 세션 계약이다.</summary>
+public interface IAfsSessionService
+{
+    Task<AfsSessionResult> SendAsync(AfsSenderSettings settings, AfsTransportSettings transport, IProgress<AfsSessionProgress>? progress, CancellationToken token);
+    Task<AfsSessionResult> ReceiveAsync(AfsReceiverSettings settings, AfsTransportSettings transport, IProgress<AfsSessionProgress>? progress, CancellationToken token);
+}
+
 /// <summary>GNSS RAW 레코드 한 조각의 순서, 길이와 무결성 정보를 나타낸다.</summary>
 public sealed record AfsRawFragment(
     byte Version,

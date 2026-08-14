@@ -135,7 +135,13 @@ public sealed class AfsErrorCorrectionExperimentService(Func<IAfsFrameCodec>? co
             Percent(rows.Sum(x => Bool(x.Sb2LdpcSuccess) + Bool(x.Sb3LdpcSuccess) + Bool(x.Sb4LdpcSuccess)), blockCount),
             Percent(rows.Sum(x => Bool(x.Sb2CrcSuccess) + Bool(x.Sb3CrcSuccess) + Bool(x.Sb4CrcSuccess)), blockCount),
             Percent(rows.Count(x => x.DataRestored), rows.Length),
-            changed.Length == 0 ? 0 : changed.Average());
+            changed.Length == 0 ? 0 : changed.Average(),
+            Percent(rows.Count(x => x.Sb2LdpcSuccess), rows.Length),
+            Percent(rows.Count(x => x.Sb3LdpcSuccess), rows.Length),
+            Percent(rows.Count(x => x.Sb4LdpcSuccess), rows.Length),
+            Percent(rows.Count(x => x.Sb2CrcSuccess), rows.Length),
+            Percent(rows.Count(x => x.Sb3CrcSuccess), rows.Length),
+            Percent(rows.Count(x => x.Sb4CrcSuccess), rows.Length));
     }
 
     private static byte[] CreateTestBits(int length, uint state)
@@ -155,8 +161,8 @@ public sealed class AfsErrorCorrectionExperimentService(Func<IAfsFrameCodec>? co
         IReadOnlyList<AfsErrorCorrectionTrialResult> trials, CancellationToken token)
     {
         static string N(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
-        var summaryLines = new[] { "Mode,ErrorCount,Trials,SyncAcceptanceRate,LdpcSuccessRate,CrcSuccessRate,FrameRestoreRate,AverageChangedBits" }
-            .Concat(summaries.Select(x => $"{x.Mode},{x.ErrorCount},{x.Trials},{N(x.SyncAcceptanceRate)},{N(x.LdpcSuccessRate)},{N(x.CrcSuccessRate)},{N(x.FrameRestoreRate)},{N(x.AverageChangedBits)}"));
+        var summaryLines = new[] { "Mode,ErrorCount,Trials,SyncAcceptanceRate,LdpcSuccessRate,CrcSuccessRate,FrameRestoreRate,AverageChangedBits,Sb2LdpcRate,Sb3LdpcRate,Sb4LdpcRate,Sb2CrcRate,Sb3CrcRate,Sb4CrcRate" }
+            .Concat(summaries.Select(x => $"{x.Mode},{x.ErrorCount},{x.Trials},{N(x.SyncAcceptanceRate)},{N(x.LdpcSuccessRate)},{N(x.CrcSuccessRate)},{N(x.FrameRestoreRate)},{N(x.AverageChangedBits)},{N(x.Sb2LdpcSuccessRate)},{N(x.Sb3LdpcSuccessRate)},{N(x.Sb4LdpcSuccessRate)},{N(x.Sb2CrcSuccessRate)},{N(x.Sb3CrcSuccessRate)},{N(x.Sb4CrcSuccessRate)}"));
         await File.WriteAllLinesAsync(Path.Combine(directory, "fec-summary.csv"), summaryLines, Encoding.UTF8, token);
         var trialLines = new[] { "Mode,ErrorCount,Trial,Seed,SyncAccepted,Sb2Ldpc,Sb3Ldpc,Sb4Ldpc,Sb2Crc,Sb3Crc,Sb4Crc,Sb2ChangedBits,Sb3ChangedBits,Sb4ChangedBits,DataRestored,FlippedSymbols,Detail" }
             .Concat(trials.Select(x => $"{x.Mode},{x.ErrorCount},{x.TrialNumber},{x.Seed},{x.SyncAccepted},{x.Sb2LdpcSuccess},{x.Sb3LdpcSuccess},{x.Sb4LdpcSuccess},{x.Sb2CrcSuccess},{x.Sb3CrcSuccess},{x.Sb4CrcSuccess},{x.Sb2ChangedBits},{x.Sb3ChangedBits},{x.Sb4ChangedBits},{x.DataRestored},\"{x.FlippedSymbols}\",\"{Escape(x.Detail)}\""));

@@ -12,23 +12,23 @@ namespace LnisAfsValidator.Infrastructure;
 /// Test A/E의 시간 동기, 세션 제어, AFS 프레임 송수신, RAW 재조립과 결과 반환을 담당한다.
 /// Frame만 선택적으로 드롭하며 세션 제어 패킷은 시험 종료를 위해 항상 전송한다.
 /// </summary>
-public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = null)
+public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = null) : IAfsSessionService
 {
     private readonly Func<IAfsFrameCodec> codecFactory = codecFactory ?? (() => new AfsNativeCodec());
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
-    public async Task<AfsSessionResult> SendAsync(AfsTestSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
+    public async Task<AfsSessionResult> SendAsync(AfsSenderSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
     {
         // 원본 레코드 두 조각을 SB3/SB4에 배치하므로 한 AFS 프레임이 최대 두 fragment를 운반한다.
         Validate(test, network, true); var testId = Guid.NewGuid(); var records = await ReadRecordsAsync(test.CapturePath, token);
         var sourceHash = await Hashing.Sha256Async(test.CapturePath, token); var sourceLength = new FileInfo(test.CapturePath).Length;
-        var (week, itow, toi) = TimeFrom(records); var almanac = AfsSb2Builder.ReadAlmanac(test.AlmanacPath, test.Prn);
+        var (week, itow, toi) = TimeFrom(records);
         var blocks = records.SelectMany((record, index) => AfsRawFragmentCodec.Fragment(checked((uint)index), record)).ToArray();
         var frames = new List<(ushort Week, ushort Itow, byte Toi, byte[] Frame)>(); await using var codec = codecFactory();
         for (var i = 0; i < blocks.Length; i += 2)
         {
             token.ThrowIfCancellationRequested(); var second = i + 1 < blocks.Length ? blocks[i + 1] : blocks[i];
-            var sb2 = AfsSb2Builder.Build(week, itow, almanac); var sb3 = AfsRawFragmentCodec.ToSbBits(blocks[i]); var sb4 = AfsRawFragmentCodec.ToSbBits(second);
+            var sb2 = AfsSb2Builder.BuildValidationPattern(week, itow); var sb3 = AfsRawFragmentCodec.ToSbBits(blocks[i]); var sb4 = AfsRawFragmentCodec.ToSbBits(second);
             frames.Add((week, itow, toi, await codec.EncodeAsync(toi, sb2, sb3, sb4, token))); Advance(ref week, ref itow, ref toi);
             progress?.Report(new("Encoding", 35.0 * (i + 2) / Math.Max(1, blocks.Length), $"Encoded {frames.Count} AFS frames"));
         }
@@ -69,7 +69,7 @@ public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = nu
         }
     }
 
-    public async Task<AfsSessionResult> ReceiveAsync(AfsTestSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
+    public async Task<AfsSessionResult> ReceiveAsync(AfsReceiverSettings test, AfsTransportSettings network, IProgress<AfsSessionProgress>? progress, CancellationToken token)
     {
         // 수신 측은 SessionStart의 원본 메타데이터를 기준으로 재조립 결과와 최종 해시를 검증한다.
         Validate(test, network, false); using var udp = new UdpClient(new IPEndPoint(IPAddress.Any, network.DataPort));
@@ -157,6 +157,15 @@ public sealed class AfsUdpSessionService(Func<IAfsFrameCodec>? codecFactory = nu
     { var result = new List<byte[]>(); await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, true); var size = new byte[4]; while (stream.Position < stream.Length) { await stream.ReadExactlyAsync(size, token); var length = checked((int)BinaryPrimitives.ReadUInt32BigEndian(size)); if (length is <= 0 or > 1048704) throw new InvalidDataException("Invalid capture.graw record length."); var record = new byte[length]; await stream.ReadExactlyAsync(record, token); result.Add(record); } if (result.Count == 0) throw new InvalidDataException("capture.graw is empty."); return result; }
     private static IEnumerable<PerformanceMetric> SystemMetrics(WireResult w) { yield return new(PerformanceCategory.System, "CpuAverage", "라우팅 및 PVT 처리 시 프로세서 평균 사용량", "%", w.CpuAverage, MetricStatus.Measured); yield return new(PerformanceCategory.System, "CpuMaximum", "라우팅 및 PVT 처리 시 프로세서 최대 사용량", "%", w.CpuMaximum, MetricStatus.Measured); yield return new(PerformanceCategory.System, "MemoryAverage", "번들 저장 및 처리 시 평균 메모리 사용량", "byte", w.MemoryAverage, MetricStatus.Measured); yield return new(PerformanceCategory.System, "MemoryMaximum", "번들 저장 및 처리 시 최대 메모리 사용량", "byte", w.MemoryMaximum, MetricStatus.Measured); yield return new(PerformanceCategory.System, "LogStorageRate", "시험데이터 기록 성공률", "%", 100, MetricStatus.Measured); }
     private static async Task WriteCsvAsync(string directory, IReadOnlyList<PerformanceMetric> metrics, IReadOnlyList<ResourceSample> samples, CancellationToken token) { await File.WriteAllLinesAsync(Path.Combine(directory, "metrics-summary.csv"), new[] { "Category,Name,Description,Value,Unit,Status" }.Concat(metrics.Select(x => $"{x.Category},{x.Name},\"{x.Description}\",{x.Value},{x.Unit},{x.Status}")), Encoding.UTF8, token); await File.WriteAllLinesAsync(Path.Combine(directory, "metrics-timeseries.csv"), new[] { "Timestamp,CpuPercent,WorkingSetBytes" }.Concat(samples.Select(x => $"{x.Timestamp:O},{x.CpuPercent},{x.WorkingSetBytes}")), Encoding.UTF8, token); }
-    private static void Validate(AfsTestSettings test, AfsTransportSettings network, bool sender) { if (sender && !File.Exists(test.CapturePath)) throw new FileNotFoundException("capture.graw was not found.", test.CapturePath); if (sender && !File.Exists(test.AlmanacPath)) throw new FileNotFoundException("Almanac was not found.", test.AlmanacPath); if (test.Prn != 8 || test.CustomMessageType != 63) throw new ArgumentException("AFS v1 requires PRN 8 and custom type 63."); if (network.DataPort is < 1 or > 65535 || network.ResultPort is < 1 or > 65535 || network.DataPort == network.ResultPort) throw new ArgumentException("Invalid UDP ports."); if (network.SimulatedDropRatePercent is < 0 or > 100) throw new ArgumentException("의도적 UDP Drop Rate는 0~100% 범위여야 합니다."); Directory.CreateDirectory(test.ResultRoot); }
+    private static void Validate(AfsSenderSettings test, AfsTransportSettings network, bool sender) { if (!File.Exists(test.CapturePath)) throw new FileNotFoundException("capture.graw 파일을 찾을 수 없습니다.", test.CapturePath); ValidateCommon(test.ResultRoot, test.Prn, test.CustomMessageType, network); }
+    private static void Validate(AfsReceiverSettings test, AfsTransportSettings network, bool sender) => ValidateCommon(test.ResultRoot, test.Prn, test.CustomMessageType, network);
+    private static void ValidateCommon(string resultRoot, int prn, int customMessageType, AfsTransportSettings network)
+    {
+        if (prn != 8 || customMessageType != 63) throw new ArgumentException("AFS v1은 PRN 8과 Custom Type 63만 지원합니다.");
+        if (network.DataPort is < 1 or > 65535 || network.ResultPort is < 1 or > 65535 || network.DataPort == network.ResultPort) throw new ArgumentException("데이터 포트와 결과 포트는 서로 다른 1~65535 값이어야 합니다.");
+        if (network.RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다.");
+        if (network.SimulatedDropRatePercent is < 0 or > 100) throw new ArgumentException("의도적 UDP Drop Rate는 0~100% 범위여야 합니다.");
+        Directory.CreateDirectory(resultRoot);
+    }
     private sealed record WireResult(Verdict Verdict, RawIntegrityResult Integrity, long ExpectedFrames, long ReceivedFrames, long ReceivedDatagrams, long Duplicates, long Corrupt, long Probes, long ProbeResponses, double? AverageLatency, double? MaximumLatency, double CpuAverage, double CpuMaximum, double MemoryAverage, double MemoryMaximum, string ResultDirectory, string? Error);
 }

@@ -1,0 +1,29 @@
+LnisAfsCodec links code from LANS-AFS-SIM and PocketSDR-AFS/PocketSDR.
+
+LANS-AFS-SIM
+Copyright (c) 2025, Takuji Ebinuma
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that source redistributions retain the copyright notice
+and binary redistributions reproduce the notice and disclaimer in documentation.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
+
+PocketSDR / PocketSDR-AFS
+Additional Copyright (c) 2025, Takuji Ebinuma, All rights reserved.
+Copyright (c) 2021-2023, T. Takasu, All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that source redistributions retain the copyright notice
+and binary redistributions reproduce the notice and disclaimer in documentation.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES.
+
+The complete upstream license texts remain available in the unmodified source
+trees distributed with this project.

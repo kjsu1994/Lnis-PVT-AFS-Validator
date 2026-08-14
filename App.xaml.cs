@@ -1,6 +1,8 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using System.Windows.Input;
+using LnisAfsValidator.Core;
 
 namespace LnisAfsValidator.App;
 
@@ -9,5 +11,59 @@ namespace LnisAfsValidator.App;
 /// </summary>
 public partial class App : Application
 {
+    private void OnStartup(object sender, StartupEventArgs e)
+    {
+        // 일반 실행은 대시보드를 열고, 역할 인수는 반복 가능한 자동 인수시험 창을 직접 연다.
+        var arguments = e.Args.ToDictionary(
+            x => x.Split('=', 2)[0],
+            x => x.Contains('=') ? x.Split('=', 2)[1] : "true",
+            StringComparer.OrdinalIgnoreCase);
+
+        Window window;
+        ICommand? start = null;
+        // 역할별 ViewModel에 명령행 시험값을 주입하되 실제 실행 경로는 UI 명령과 동일하게 유지한다.
+        if (arguments.ContainsKey("--sender"))
+        {
+            var vm = new AfsSenderViewModel();
+            if (arguments.TryGetValue("--capture", out var capture)) vm.CapturePath = capture;
+            if (arguments.TryGetValue("--broadcast", out var address)) vm.BroadcastAddress = address;
+            if (Value(arguments, "--data-port") is { } data) vm.DataPort = data;
+            if (Value(arguments, "--result-port") is { } result) vm.ResultPort = result;
+            if (Value(arguments, "--repeat") is { } repeat) vm.RepeatCount = repeat;
+            if (Value(arguments, "--timeout") is { } timeout) vm.ResultTimeoutSeconds = timeout;
+            if (DoubleValue(arguments, "--drop-rate") is { } dropRate) vm.DropRatePercent = dropRate;
+            if (Value(arguments, "--drop-seed") is { } dropSeed) vm.DropSeed = dropSeed;
+            window = new AfsSenderWindow(vm); start = vm.StartCommand;
+        }
+        else if (arguments.ContainsKey("--receiver"))
+        {
+            var vm = new AfsReceiverViewModel();
+            if (Value(arguments, "--data-port") is { } data) vm.DataPort = data;
+            if (Value(arguments, "--result-port") is { } result) vm.ResultPort = result;
+            if (Value(arguments, "--repeat") is { } repeat) vm.RepeatCount = repeat;
+            window = new AfsReceiverWindow(vm); start = vm.StartCommand;
+        }
+        else if (arguments.ContainsKey("--experiment"))
+        {
+            var vm = new AfsErrorExperimentViewModel();
+            if (arguments.TryGetValue("--mode", out var mode) && Enum.TryParse<AfsErrorInjectionMode>(mode, true, out var parsedMode)) vm.ErrorMode = parsedMode;
+            if (arguments.TryGetValue("--errors", out var errors)) vm.ErrorCountsText = errors;
+            if (Value(arguments, "--trials") is { } trials) vm.TrialsPerCondition = trials;
+            if (Value(arguments, "--seed") is { } seed) vm.ExperimentSeed = seed;
+            window = new AfsErrorExperimentWindow(vm); start = vm.RunCommand;
+        }
+        else window = new AfsDashboardWindow();
+
+        // 창이 표시된 다음 자동 시작해야 WPF 바인딩과 화면 수명까지 실제로 검증할 수 있다.
+        MainWindow = window;
+        window.Show();
+        if (arguments.ContainsKey("--auto-start") && start is not null)
+            Dispatcher.BeginInvoke(() => start.Execute(null));
+    }
+
+    private static int? Value(IReadOnlyDictionary<string, string> arguments, string name) =>
+        arguments.TryGetValue(name, out var text) && int.TryParse(text, out var value) ? value : null;
+    private static double? DoubleValue(IReadOnlyDictionary<string, string> arguments, string name) =>
+        arguments.TryGetValue(name, out var text) && double.TryParse(text, System.Globalization.CultureInfo.InvariantCulture, out var value) ? value : null;
 }
 

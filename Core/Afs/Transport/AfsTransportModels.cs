@@ -34,4 +34,5 @@ public sealed record AfsNetworkCounters(
     long SimulatedDroppedDatagrams = 0,
     double ConfiguredDropRatePercent = 0);
 
+/// <summary>수신 프로세스의 특정 시점 CPU와 작업 집합 메모리 표본이다.</summary>
 public sealed record ResourceSample(DateTimeOffset Timestamp, double CpuPercent, long WorkingSetBytes);

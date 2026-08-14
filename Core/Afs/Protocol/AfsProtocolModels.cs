@@ -1,12 +1,17 @@
 namespace LnisAfsValidator.Core;
 
 // AFS 시험 설정, 성능 지표와 최종 RAW 무결성 결과를 전달하는 모델이다.
+/// <summary>시험의 최종 판정 상태다.</summary>
+public enum Verdict { Pass, Fail, Inconclusive }
+/// <summary>성능 지표가 속하는 측정 영역이다.</summary>
 public enum PerformanceCategory { Network, Routing, Pvt, System, DataIntegrity }
+/// <summary>개별 성능 지표의 판정 또는 측정 상태다.</summary>
 public enum MetricStatus { Pass, Fail, Measured, NotApplicable }
 
 /// <summary>측정값에 적용할 최소 또는 최대 합격 기준을 나타낸다.</summary>
 public sealed record MetricThreshold(bool Enabled, double Value, bool IsMinimum);
 
+/// <summary>시험에서 측정한 단일 성능 지표와 선택 판정 기준이다.</summary>
 public sealed record PerformanceMetric(
     PerformanceCategory Category,
     string Name,
@@ -29,15 +34,22 @@ public sealed record AfsTransportSettings(
     double SimulatedDropRatePercent = 0,
     int SimulatedDropSeed = 1);
 
-/// <summary>입력 RAW·almanac 경로와 AFS 규격 고정값 및 판정 기준을 묶는다.</summary>
-public sealed record AfsTestSettings(
+/// <summary>송신부가 사용하는 원본 RAW 경로, 논리 AFS 식별자와 판정 기준이다.</summary>
+public sealed record AfsSenderSettings(
     string CapturePath,
-    string AlmanacPath,
     string ResultRoot,
     int Prn = 8,
     int CustomMessageType = 63,
     IReadOnlyDictionary<string, MetricThreshold>? Thresholds = null);
 
+/// <summary>수신부가 사용하는 저장 위치와 판정 기준이다. 송신 전용 입력 파일은 포함하지 않는다.</summary>
+public sealed record AfsReceiverSettings(
+    string ResultRoot,
+    int Prn = 8,
+    int CustomMessageType = 63,
+    IReadOnlyDictionary<string, MetricThreshold>? Thresholds = null);
+
+/// <summary>원본과 재구성 RAW 파일의 길이·레코드 수·SHA-256 비교 결과다.</summary>
 public sealed record RawIntegrityResult(
     bool Success,
     long SourceLength,

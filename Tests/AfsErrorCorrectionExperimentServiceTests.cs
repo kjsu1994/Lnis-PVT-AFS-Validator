@@ -21,6 +21,10 @@ public sealed class AfsErrorCorrectionExperimentServiceTests
         Assert.True(File.Exists(Path.Combine(result.ResultDirectory, "fec-result.json")));
         Assert.True(File.Exists(Path.Combine(result.ResultDirectory, "fec-summary.csv")));
         Assert.True(File.Exists(Path.Combine(result.ResultDirectory, "fec-trials.csv")));
+        var summary = Assert.Single(result.Summaries);
+        Assert.Equal(100, summary.Sb2LdpcSuccessRate); Assert.Equal(100, summary.Sb3LdpcSuccessRate); Assert.Equal(100, summary.Sb4LdpcSuccessRate);
+        Assert.Equal(100, summary.Sb2CrcSuccessRate); Assert.Equal(100, summary.Sb3CrcSuccessRate); Assert.Equal(100, summary.Sb4CrcSuccessRate);
+        Assert.Contains("Sb2LdpcRate", await File.ReadAllTextAsync(Path.Combine(result.ResultDirectory, "fec-summary.csv")));
     }
 
     [Fact]

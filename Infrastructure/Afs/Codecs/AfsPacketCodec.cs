@@ -43,6 +43,7 @@ public static class AfsPacketCodec
     }
 }
 
+/// <summary>TestId·종류·Sequence가 같은 중복 UDP 패킷을 한 번만 수용한다.</summary>
 public sealed class AfsPacketDeduplicator
 {
     // CopyIndex는 키에 포함하지 않아 중복 송신된 같은 논리 패킷을 한 번만 수용한다.

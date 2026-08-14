@@ -5,7 +5,7 @@ using LnisAfsValidator.Core;
 namespace LnisAfsValidator.Infrastructure;
 
 /// <summary>정규화된 GNSS RAW 메시지를 버전이 포함된 바이너리 레코드로 인코딩·디코딩한다.</summary>
-public sealed class GnssRawBinaryCodec : IGnssRawCodec
+public sealed class GnssRawBinaryCodec
 {
     private static readonly byte[] Magic = "LGRW"u8.ToArray();
     private const ushort CurrentVersion = 1;

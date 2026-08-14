@@ -7,6 +7,7 @@ public sealed record AfsErrorCorrectionExperimentSettings(
     int TrialsPerCondition,
     int Seed);
 
+/// <summary>Test B/C 한 회차의 블록별 LDPC·CRC 및 원본 복원 결과다.</summary>
 public sealed record AfsErrorCorrectionTrialResult(
     AfsErrorInjectionMode Mode,
     int ErrorCount,
@@ -26,6 +27,7 @@ public sealed record AfsErrorCorrectionTrialResult(
     string FlippedSymbols,
     string? Detail);
 
+/// <summary>동일 오류 심볼 수 조건을 반복한 뒤 계산한 블록별 성공률 요약이다.</summary>
 public sealed record AfsErrorCorrectionSummary(
     AfsErrorInjectionMode Mode,
     int ErrorCount,
@@ -34,8 +36,15 @@ public sealed record AfsErrorCorrectionSummary(
     double LdpcSuccessRate,
     double CrcSuccessRate,
     double FrameRestoreRate,
-    double AverageChangedBits);
+    double AverageChangedBits,
+    double Sb2LdpcSuccessRate,
+    double Sb3LdpcSuccessRate,
+    double Sb4LdpcSuccessRate,
+    double Sb2CrcSuccessRate,
+    double Sb3CrcSuccessRate,
+    double Sb4CrcSuccessRate);
 
+/// <summary>Test B/C 설정, 조건별 요약, 모든 시행과 결과 폴더를 묶는다.</summary>
 public sealed record AfsErrorCorrectionExperimentResult(
     DateTimeOffset CompletedAt,
     AfsErrorCorrectionExperimentSettings Settings,

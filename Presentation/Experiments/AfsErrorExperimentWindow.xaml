@@ -1,60 +1,58 @@
 <Window x:Class="LnisAfsValidator.App.AfsErrorExperimentWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="LNIS AFS 오류·손실 실험" Width="1400" Height="900" MinWidth="1100" MinHeight="720" Background="#F3F5F8">
+        Title="AFS CRC·LDPC·인터리빙 검증" Width="1480" Height="900" MinWidth="1180" MinHeight="720" Background="#F3F5F8">
   <Window.Resources>
     <Style TargetType="GroupBox"><Setter Property="Margin" Value="6"/><Setter Property="Padding" Value="10"/><Setter Property="Background" Value="White"/></Style>
     <Style TargetType="TextBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
     <Style TargetType="ComboBox"><Setter Property="Margin" Value="4"/><Setter Property="Padding" Value="5"/></Style>
     <Style TargetType="Button"><Setter Property="Margin" Value="5"/><Setter Property="Padding" Value="15,8"/></Style>
   </Window.Resources>
-  <!-- 상단은 시험 조건, 중앙은 로그와 지표, 하단은 진행 상태와 명령 영역이다. -->
-  <Grid Margin="12"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-    <TabControl>
-      <TabItem Header="Test B/C/D · AFS 오류정정·재동기">
-        <Grid Margin="8"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <GroupBox Header="시험 조건">
-            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="180"/><ColumnDefinition Width="120"/><ColumnDefinition Width="280"/><ColumnDefinition Width="120"/><ColumnDefinition Width="100"/><ColumnDefinition Width="80"/><ColumnDefinition Width="100"/><ColumnDefinition/></Grid.ColumnDefinitions>
-              <TextBlock Text="오류 유형" VerticalAlignment="Center"/><ComboBox Grid.Column="1" ItemsSource="{Binding ErrorModes}" SelectedItem="{Binding ErrorMode}"/>
-              <TextBlock Grid.Column="2" Text="오류 개수" VerticalAlignment="Center"/><TextBox Grid.Column="3" Text="{Binding ErrorCountsText}" ToolTip="Random/Burst 예: 1,2,5,10,20,50 · SyncLoss: 1~68"/>
-              <TextBlock Grid.Column="4" Text="조건별 반복" VerticalAlignment="Center"/><TextBox Grid.Column="5" Text="{Binding TrialsPerCondition}"/>
-              <TextBlock Grid.Column="6" Text="Seed" VerticalAlignment="Center"/><TextBox Grid.Column="7" Text="{Binding ExperimentSeed}"/>
-              <Button Grid.Column="8" Content="오류 시험 실행" Command="{Binding RunFecCommand}" Background="#175CD3" Foreground="White" FontWeight="SemiBold"/>
-            </Grid>
-          </GroupBox>
-          <Border Grid.Row="1" Margin="10,2" Padding="10" Background="#EFF8FF" BorderBrush="#B2DDFF" BorderThickness="1" CornerRadius="4">
-            <TextBlock TextWrapping="Wrap" Text="Random은 인터리빙 완료 영역의 임의 심볼을 반전하고, Burst는 연속 심볼을 반전합니다. SyncLoss는 ‘정상 → SP 훼손 → 정상’ 3프레임 스트림을 만들어 다음 SP 재탐색과 Decode 복귀시간을 측정합니다. 기본 100회 반복을 권장합니다."/>
-          </Border>
-        </Grid>
-      </TabItem>
-      <TabItem Header="Test E · UDP Packet Drop">
-        <Grid Margin="8"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-          <GroupBox Header="입력 파일"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-            <TextBlock Text="capture.graw" VerticalAlignment="Center"/><TextBox Grid.Column="1" Text="{Binding CapturePath}"/><Button Grid.Column="2" Content="찾아보기" Command="{Binding BrowseCaptureCommand}"/>
-            <TextBlock Grid.Row="1" Text="PRN 8 Almanac" VerticalAlignment="Center"/><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding AlmanacPath}"/><Button Grid.Row="1" Grid.Column="2" Content="찾아보기" Command="{Binding BrowseAlmanacCommand}"/>
-          </Grid></GroupBox>
-          <GroupBox Grid.Row="1" Header="UDP 손실 조건"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="120"/><ColumnDefinition Width="110"/><ColumnDefinition Width="180"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/><ColumnDefinition Width="90"/><ColumnDefinition/></Grid.ColumnDefinitions>
-            <TextBlock Text="실행 역할" VerticalAlignment="Center"/><ComboBox Grid.Column="1" ItemsSource="{Binding Roles}" SelectedItem="{Binding UdpRole}"/>
-            <TextBlock Grid.Column="2" Text="Broadcast" VerticalAlignment="Center"/><TextBox Grid.Column="3" Text="{Binding BroadcastAddress}"/>
-            <TextBlock Grid.Column="4" Text="데이터 포트" VerticalAlignment="Center"/><TextBox Grid.Column="5" Text="{Binding DataPort}"/>
-            <TextBlock Grid.Column="6" Text="결과 포트" VerticalAlignment="Center"/><TextBox Grid.Column="7" Text="{Binding ResultPort}"/>
-            <TextBlock Grid.Column="8" Text="중복 횟수" VerticalAlignment="Center"/><TextBox Grid.Column="9" Text="{Binding RepeatCount}"/>
-          </Grid></GroupBox>
-          <GroupBox Grid.Row="2" Header="의도적 Drop"><StackPanel>
-            <WrapPanel><TextBlock Text="Drop Rate (%)" VerticalAlignment="Center" Margin="4"/><TextBox Width="100" Text="{Binding UdpDropRatePercent}"/><TextBlock Text="Seed" VerticalAlignment="Center" Margin="14,4,4,4"/><TextBox Width="100" Text="{Binding UdpDropSeed}"/><Button Content="UDP 손실 시험 실행" Command="{Binding RunUdpDropCommand}" Background="#B54708" Foreground="White" FontWeight="SemiBold"/></WrapPanel>
-            <TextBlock Margin="4" Foreground="#475467" TextWrapping="Wrap" Text="Frame 데이터그램만 설정 비율로 제거합니다. SessionStart/End와 결과 패킷은 항상 전송하여 시험 제어 손실과 AFS 데이터 손실을 분리합니다. 같은 Seed는 같은 프레임·복제본을 제거합니다."/>
-          </StackPanel></GroupBox>
-        </Grid>
-      </TabItem>
-    </TabControl>
-    <Grid Grid.Row="1"><Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition/></Grid.ColumnDefinitions>
-      <GroupBox Header="시험 결과"><DataGrid ItemsSource="{Binding Metrics}" AutoGenerateColumns="False" IsReadOnly="True"><DataGrid.Columns>
-        <DataGridTextColumn Header="분류" Binding="{Binding Category}" Width="110"/><DataGridTextColumn Header="지표" Binding="{Binding Name}" Width="280"/><DataGridTextColumn Header="설명" Binding="{Binding Description}" Width="*"/><DataGridTextColumn Header="값" Binding="{Binding Value}" Width="110"/><DataGridTextColumn Header="단위" Binding="{Binding Unit}" Width="70"/><DataGridTextColumn Header="상태" Binding="{Binding Status}" Width="100"/>
-      </DataGrid.Columns></DataGrid></GroupBox>
+  <!-- CRC·LDPC·인터리빙 처리 단계와 조건별 복구율을 한 화면에서 비교한다. -->
+  <Grid Margin="12">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <GroupBox Header="AFS 오픈소스 코덱 처리 사슬">
+      <UniformGrid Columns="7">
+        <Border Padding="10" Margin="3" Background="#EFF8FF"><StackPanel><TextBlock Text="CRC-24Q" FontWeight="Bold"/><TextBlock Text="SB2 1176→1200"/><TextBlock Text="SB3/4 846→870"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#ECFDF3"><StackPanel><TextBlock Text="LDPC 부호화·천공" FontWeight="Bold"/><TextBlock Text="SB2 → 2400"/><TextBlock Text="SB3/4 → 1740"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#FFF6ED"><StackPanel><TextBlock Text="인터리빙" FontWeight="Bold"/><TextBlock Text="5880심볼"/><TextBlock Text="60 × 98"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#FEF3F2"><StackPanel><TextBlock Text="오류 주입" FontWeight="Bold"/><TextBlock Text="Random / Burst"/><TextBlock Text="index 120~5999"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#FFF6ED"><StackPanel><TextBlock Text="디인터리빙" FontWeight="Bold"/><TextBlock Text="5880심볼"/><TextBlock Text="원래 블록 분리"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#ECFDF3"><StackPanel><TextBlock Text="LDPC 복호" FontWeight="Bold"/><TextBlock Text="SB2·SB3·SB4"/><TextBlock Text="블록별 성공률"/></StackPanel></Border>
+        <Border Padding="10" Margin="3" Background="#EFF8FF"><StackPanel><TextBlock Text="CRC·원본 비교" FontWeight="Bold"/><TextBlock Text="CRC 통과율"/><TextBlock Text="프레임 복원률"/></StackPanel></Border>
+      </UniformGrid>
+    </GroupBox>
+    <GroupBox Grid.Row="1" Header="시험 조건">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="170"/><ColumnDefinition Width="100"/><ColumnDefinition Width="300"/><ColumnDefinition Width="100"/><ColumnDefinition Width="100"/><ColumnDefinition Width="70"/><ColumnDefinition Width="100"/><ColumnDefinition/></Grid.ColumnDefinitions>
+        <TextBlock Text="오류 유형" VerticalAlignment="Center"/><ComboBox Grid.Column="1" ItemsSource="{Binding ErrorModes}" SelectedItem="{Binding ErrorMode}"/>
+        <TextBlock Grid.Column="2" Text="오류 심볼 수" VerticalAlignment="Center"/><TextBox Grid.Column="3" Text="{Binding ErrorCountsText}" ToolTip="Random/Burst: 최대 5880 · SyncLoss: 최대 68"/>
+        <TextBlock Grid.Column="4" Text="조건별 반복" VerticalAlignment="Center"/><TextBox Grid.Column="5" Text="{Binding TrialsPerCondition}"/>
+        <TextBlock Grid.Column="6" Text="Seed" VerticalAlignment="Center"/><TextBox Grid.Column="7" Text="{Binding ExperimentSeed}"/>
+        <Button Grid.Column="8" Content="시험 실행" Command="{Binding RunCommand}" Background="#175CD3" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+      </Grid>
+    </GroupBox>
+    <Grid Grid.Row="2"><Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <TabControl Margin="6">
+        <TabItem Header="Test B/C · 오류 개수별 정정률">
+          <DataGrid ItemsSource="{Binding FecSummaries}" AutoGenerateColumns="False" IsReadOnly="True" FrozenColumnCount="3">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="방식" Binding="{Binding Mode}" Width="80"/><DataGridTextColumn Header="오류 심볼" Binding="{Binding ErrorCount}" Width="80"/><DataGridTextColumn Header="반복" Binding="{Binding Trials}" Width="65"/>
+              <DataGridTextColumn Header="전체 LDPC %" Binding="{Binding LdpcSuccessRate, StringFormat=F2}" Width="95"/><DataGridTextColumn Header="전체 CRC %" Binding="{Binding CrcSuccessRate, StringFormat=F2}" Width="95"/><DataGridTextColumn Header="프레임 복원 %" Binding="{Binding FrameRestoreRate, StringFormat=F2}" Width="105"/>
+              <DataGridTextColumn Header="SB2 LDPC %" Binding="{Binding Sb2LdpcSuccessRate, StringFormat=F2}" Width="95"/><DataGridTextColumn Header="SB3 LDPC %" Binding="{Binding Sb3LdpcSuccessRate, StringFormat=F2}" Width="95"/><DataGridTextColumn Header="SB4 LDPC %" Binding="{Binding Sb4LdpcSuccessRate, StringFormat=F2}" Width="95"/>
+              <DataGridTextColumn Header="SB2 CRC %" Binding="{Binding Sb2CrcSuccessRate, StringFormat=F2}" Width="90"/><DataGridTextColumn Header="SB3 CRC %" Binding="{Binding Sb3CrcSuccessRate, StringFormat=F2}" Width="90"/><DataGridTextColumn Header="SB4 CRC %" Binding="{Binding Sb4CrcSuccessRate, StringFormat=F2}" Width="90"/><DataGridTextColumn Header="평균 수정 비트" Binding="{Binding AverageChangedBits, StringFormat=F2}" Width="110"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </TabItem>
+        <TabItem Header="Test D · 재동기">
+          <DataGrid ItemsSource="{Binding SyncSummaries}" AutoGenerateColumns="False" IsReadOnly="True"><DataGrid.Columns>
+            <DataGridTextColumn Header="SP 오류 심볼" Binding="{Binding SyncErrorCount}" Width="120"/><DataGridTextColumn Header="반복" Binding="{Binding Trials}" Width="80"/><DataGridTextColumn Header="손상 프레임 거부 %" Binding="{Binding DamagedFrameRejectionRate, StringFormat=F2}" Width="150"/><DataGridTextColumn Header="Sync 복구 %" Binding="{Binding SyncRecoveryRate, StringFormat=F2}" Width="130"/><DataGridTextColumn Header="Decode 복구 %" Binding="{Binding DecodeRecoveryRate, StringFormat=F2}" Width="140"/><DataGridTextColumn Header="평균 복구시간(s)" Binding="{Binding AverageRecoverySeconds, StringFormat=F3}" Width="150"/>
+          </DataGrid.Columns></DataGrid>
+        </TabItem>
+      </TabControl>
       <GroupBox Grid.Column="1" Header="실행 로그"><ListBox ItemsSource="{Binding Logs}" FontFamily="Consolas" FontSize="11" ScrollViewer.HorizontalScrollBarVisibility="Auto"/></GroupBox>
     </Grid>
-    <Grid Grid.Row="2" Margin="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="상태: " FontWeight="Bold"/><TextBlock Text="{Binding State}"/><TextBlock Text="   판정: " FontWeight="Bold"/><TextBlock Text="{Binding Verdict}" FontSize="17" FontWeight="Bold"/><TextBlock Text="   "/><TextBlock Text="{Binding Error}" Foreground="#B42318"/></StackPanel><ProgressBar Value="{Binding Progress}" Maximum="100" Height="16" Margin="0,5,10,0"/><TextBlock Text="{Binding ResultDirectory}" Foreground="#667085"/></StackPanel>
+    <Grid Grid.Row="3" Margin="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel><StackPanel Orientation="Horizontal"><TextBlock Text="상태: " FontWeight="Bold"/><TextBlock Text="{Binding State}"/><TextBlock Text="   판정: " FontWeight="Bold"/><TextBlock Text="{Binding Verdict}" FontSize="17" FontWeight="Bold"/><TextBlock Text="   "/><TextBlock Text="{Binding Error}" Foreground="#B42318"/></StackPanel><ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="16" Margin="0,5,10,0"/><TextBlock Text="{Binding ResultDirectory}" Foreground="#667085"/></StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="취소" Command="{Binding CancelCommand}"/><Button Content="결과 폴더" Command="{Binding OpenResultsCommand}"/></StackPanel>
     </Grid>
   </Grid>

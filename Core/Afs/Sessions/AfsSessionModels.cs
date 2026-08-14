@@ -29,4 +29,5 @@ public sealed record AfsSessionResult(
     string ResultDirectory,
     string? Error = null);
 
+/// <summary>송수신 또는 실험 서비스가 UI에 전달하는 단계별 진행률이다.</summary>
 public sealed record AfsSessionProgress(string Stage, double Percent, string Message);

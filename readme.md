@@ -472,7 +472,7 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 AfsDashboardWindow.xaml
   정상 AFS/UDP 화면과 오류 실험 창 진입
 
-AfsMainViewModel.cs
+AfsDashboardViewModel.cs
   정상 송신·수신·로컬시험 제어
 
 AfsErrorExperimentWindow.xaml

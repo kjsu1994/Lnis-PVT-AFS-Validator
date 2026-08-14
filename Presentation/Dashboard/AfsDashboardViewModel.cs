@@ -14,7 +14,7 @@ namespace LnisAfsValidator.App;
 /// AFS 검증 메인 화면의 입력값, 실행 명령, 진행 상태와 결과 표시를 관리한다.
 /// 실제 AFS 송수신과 오류정정 시험은 Infrastructure 계층의 서비스에 위임한다.
 /// </summary>
-public sealed class AfsMainViewModel : INotifyPropertyChanged
+public sealed class AfsDashboardViewModel : INotifyPropertyChanged
 {
     private CancellationTokenSource? cancellation;
     private string state = "Idle", verdict = "-", error = "", runDirectory = "", capturePath = "", almanacPath = "", broadcastAddress = "255.255.255.255";
@@ -45,7 +45,7 @@ public sealed class AfsMainViewModel : INotifyPropertyChanged
     public ICommand BrowseCaptureCommand { get; } public ICommand BrowseAlmanacCommand { get; } public ICommand OpenErrorExperimentCommand { get; }
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public AfsMainViewModel()
+    public AfsDashboardViewModel()
     {
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null); CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
         StartFecCommand = new AsyncCommand(StartFecAsync, () => cancellation is null);

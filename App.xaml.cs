@@ -31,6 +31,10 @@ public partial class App : Application
             if (Value(arguments, "--result-port") is { } result) vm.ResultPort = result;
             if (Value(arguments, "--repeat") is { } repeat) vm.RepeatCount = repeat;
             if (Value(arguments, "--timeout") is { } timeout) vm.ResultTimeoutSeconds = timeout;
+            if (arguments.TryGetValue("--test", out var test) && Enum.TryParse<AfsEndToEndTestType>(test, true, out var parsedTest)) vm.SelectedTest = parsedTest;
+            if (Value(arguments, "--errors") is { } errors) vm.ErrorCount = errors;
+            if (Value(arguments, "--seed") is { } seed) vm.ErrorSeed = seed;
+            if (Value(arguments, "--sync-interval") is { } interval) vm.SyncDamageInterval = interval;
             if (DoubleValue(arguments, "--drop-rate") is { } dropRate) vm.DropRatePercent = dropRate;
             if (Value(arguments, "--drop-seed") is { } dropSeed) vm.DropSeed = dropSeed;
             window = new AfsSenderWindow(vm); start = vm.StartCommand;
@@ -42,15 +46,6 @@ public partial class App : Application
             if (Value(arguments, "--result-port") is { } result) vm.ResultPort = result;
             if (Value(arguments, "--repeat") is { } repeat) vm.RepeatCount = repeat;
             window = new AfsReceiverWindow(vm); start = vm.StartCommand;
-        }
-        else if (arguments.ContainsKey("--experiment"))
-        {
-            var vm = new AfsErrorExperimentViewModel();
-            if (arguments.TryGetValue("--mode", out var mode) && Enum.TryParse<AfsErrorInjectionMode>(mode, true, out var parsedMode)) vm.ErrorMode = parsedMode;
-            if (arguments.TryGetValue("--errors", out var errors)) vm.ErrorCountsText = errors;
-            if (Value(arguments, "--trials") is { } trials) vm.TrialsPerCondition = trials;
-            if (Value(arguments, "--seed") is { } seed) vm.ExperimentSeed = seed;
-            window = new AfsErrorExperimentWindow(vm); start = vm.RunCommand;
         }
         else window = new AfsDashboardWindow();
 

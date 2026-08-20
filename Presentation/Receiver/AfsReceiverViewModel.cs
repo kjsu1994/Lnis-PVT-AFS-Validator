@@ -6,12 +6,13 @@ using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.App;
 
-/// <summary>Test A/E의 UDP 수신, AFS 복호, RAW 복원과 판정만 담당한다.</summary>
+/// <summary>송신부가 선택한 Test A~E 조건을 자동 수신하여 AFS 복호, RAW 복원과 판정을 담당한다.</summary>
 public sealed class AfsReceiverViewModel : ObservableViewModel
 {
     private readonly IAfsSessionService sessionService;
     private CancellationTokenSource? cancellation;
     private string state = "Idle", verdict = "-", error = "", resultDirectory = "";
+    private string currentTest = "수신 대기", testConditions = "송신부의 SessionStart에서 자동으로 표시됩니다.";
     private double progress;
     public int DataPort { get; set; } = 45821;
     public int ResultPort { get; set; } = 45822;
@@ -20,6 +21,8 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     public double MinimumDelivery { get; set; } = 99;
     public bool ApplyLoss { get; set; }
     public double MaximumLoss { get; set; } = 1;
+    public string CurrentTest { get => currentTest; private set => Set(ref currentTest, value); }
+    public string TestConditions { get => testConditions; private set => Set(ref testConditions, value); }
     public string State { get => state; private set => Set(ref state, value); }
     public string Verdict { get => verdict; private set => Set(ref verdict, value); }
     public string Error { get => error; private set => Set(ref error, value); }
@@ -65,8 +68,8 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     }
 
     private void Validate() { if (DataPort is < 1 or > 65535 || ResultPort is < 1 or > 65535 || DataPort == ResultPort) throw new ArgumentException("데이터 포트와 결과 포트는 서로 다른 1~65535 값이어야 합니다."); if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다."); }
-    private IProgress<AfsSessionProgress> Reporter() => new Progress<AfsSessionProgress>(p => { State = $"{p.Stage}: {p.Message}"; Progress = p.Percent; Logs.Add($"{DateTime.Now:HH:mm:ss} {p.Message}"); });
-    private void Begin() { cancellation = new(); Error = ""; Verdict = "-"; Progress = 0; Metrics.Clear(); Logs.Clear(); RaiseCommands(); }
+    private IProgress<AfsSessionProgress> Reporter() => new Progress<AfsSessionProgress>(p => { State = $"{p.Stage}: {p.Message}"; Progress = p.Percent; if (p.TestType is { } type) CurrentTest = type.ToString(); if (!string.IsNullOrWhiteSpace(p.TestConditions)) TestConditions = p.TestConditions; Logs.Add($"{DateTime.Now:HH:mm:ss} {p.Message}"); });
+    private void Begin() { cancellation = new(); Error = ""; Verdict = "-"; Progress = 0; CurrentTest = "수신 대기"; TestConditions = "송신부의 SessionStart에서 자동으로 표시됩니다."; Metrics.Clear(); Logs.Clear(); RaiseCommands(); }
     private void End() { cancellation?.Dispose(); cancellation = null; RaiseCommands(); }
     private void RaiseCommands() { (StartCommand as AsyncCommand)?.Raise(); (CancelCommand as RelayCommand)?.Raise(); (OpenResultsCommand as RelayCommand)?.Raise(); }
     private static string RunRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "Runs");

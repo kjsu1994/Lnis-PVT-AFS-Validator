@@ -1,14 +1,13 @@
 <Window x:Class="LnisAfsValidator.App.AfsDashboardWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="LNIS AFS Validator" Width="920" Height="540" ResizeMode="NoResize" Background="#F3F5F8">
   <Window.Resources><Style TargetType="Button"><Setter Property="Margin" Value="12"/><Setter Property="Padding" Value="24"/><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="SemiBold"/></Style></Window.Resources>
-  <!-- 송신·수신·오류정정 역할을 서로 독립된 창으로 여는 시작 화면이다. -->
+  <!-- 두 PC에서 각각 사용할 송신부와 수신부 역할 창을 여는 시작 화면이다. -->
   <Grid Margin="34"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <TextBlock Text="LNIS AFS Validator" FontSize="30" FontWeight="Bold" Foreground="#101828"/>
     <TextBlock Grid.Row="1" Margin="0,8,0,24" Text="6000심볼(750바이트) AFS 프레임을 한 UDP 데이터그램으로 브로드캐스팅하고 오픈소스 코덱의 CRC·LDPC·인터리빙 성능을 검증합니다." TextWrapping="Wrap" Foreground="#475467" FontSize="14"/>
-    <UniformGrid Grid.Row="2" Columns="3">
-      <Button Command="{Binding OpenSenderCommand}" Background="#175CD3" Foreground="White"><StackPanel><TextBlock Text="송신부" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Test A 정상 송신&#x0a;Test E Frame Drop" Margin="0,12,0,0" FontSize="13" FontWeight="Normal" TextAlignment="Center"/></StackPanel></Button>
-      <Button Command="{Binding OpenReceiverCommand}" Background="#067647" Foreground="White"><StackPanel><TextBlock Text="수신부" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="AFS 복호·RAW 복원&#x0a;무결성·성능 판정" Margin="0,12,0,0" FontSize="13" FontWeight="Normal" TextAlignment="Center"/></StackPanel></Button>
-      <Button Command="{Binding OpenExperimentCommand}" Background="#B54708" Foreground="White"><StackPanel><TextBlock Text="오류정정 실험" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Test B/C 오류정정률&#x0a;Test D 재동기율" Margin="0,12,0,0" FontSize="13" FontWeight="Normal" TextAlignment="Center"/></StackPanel></Button>
+    <UniformGrid Grid.Row="2" Columns="2">
+      <Button Command="{Binding OpenSenderCommand}" Background="#175CD3" Foreground="White"><StackPanel><TextBlock Text="송신부" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="Test A~E 선택·조건 설정&#x0a;AFS 프레임 송신" Margin="0,12,0,0" FontSize="13" FontWeight="Normal" TextAlignment="Center"/></StackPanel></Button>
+      <Button Command="{Binding OpenReceiverCommand}" Background="#067647" Foreground="White"><StackPanel><TextBlock Text="수신부" FontSize="22" HorizontalAlignment="Center"/><TextBlock Text="시험 자동 인식·AFS 복호&#x0a;RAW 복원·결과 판정" Margin="0,12,0,0" FontSize="13" FontWeight="Normal" TextAlignment="Center"/></StackPanel></Button>
     </UniformGrid>
-    <TextBlock Grid.Row="3" Margin="12,22,12,0" Text="I/Q·RF 처리는 포함하지 않습니다. Test B/C는 인터리빙된 AFS 심볼 반전 기반의 재현 가능한 로컬 코덱 시험입니다." Foreground="#667085" TextWrapping="Wrap"/>
+    <TextBlock Grid.Row="3" Margin="12,22,12,0" Text="송신부에서 시험 종류를 결정하고 수신부는 SessionStart 조건을 자동 적용합니다. I/Q·RF 처리는 포함하지 않습니다." Foreground="#667085" TextWrapping="Wrap"/>
   </Grid>
 </Window>

@@ -16,7 +16,12 @@ public sealed record AfsSessionManifest(
     long ClockOffsetTicks = 0,
     double SimulatedDropRatePercent = 0,
     int SimulatedDropSeed = 1,
-    long SimulatedDroppedDatagrams = 0);
+    long SimulatedDroppedDatagrams = 0,
+    AfsEndToEndTestType TestType = AfsEndToEndTestType.TestA_Normal,
+    int ErrorCount = 0,
+    int ErrorSeed = 1,
+    int SyncDamageInterval = 0,
+    int InjectedFrameCount = 0);
 
 /// <summary>AFS 송수신 시험의 판정, 무결성 결과, 성능 지표와 저장 위치를 묶는다.</summary>
 public sealed record AfsSessionResult(
@@ -30,4 +35,9 @@ public sealed record AfsSessionResult(
     string? Error = null);
 
 /// <summary>송수신 또는 실험 서비스가 UI에 전달하는 단계별 진행률이다.</summary>
-public sealed record AfsSessionProgress(string Stage, double Percent, string Message);
+public sealed record AfsSessionProgress(
+    string Stage,
+    double Percent,
+    string Message,
+    AfsEndToEndTestType? TestType = null,
+    string? TestConditions = null);

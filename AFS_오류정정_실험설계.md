@@ -1,4 +1,19 @@
 # AFS Frame / UDP 전송 / 오류정정 실험 정리
+
+## 현재 프로그램 적용 상태
+
+현재 LNIS AFS Validator의 공식 운용 화면은 송신부와 수신부 두 개다. 송신부에서 Test A~E와 시험 조건을 선택하고, 수신부는 `SessionStart`에서 시험 종류·오류 수·Seed·SP 손상 간격·UDP Drop 조건을 자동으로 받아 결과를 표시한다. 별도 오류정정 시험 창은 사용하지 않는다.
+
+| 시험 | 현재 종단 간 실행 방식 |
+|---|---|
+| Test A | 정상 AFS 프레임을 UDP로 송신하고 RAW 무결성을 확인한다. |
+| Test B | 실제 `capture.graw`로 만든 프레임에 Random 심볼 오류를 주입해 송신한다. |
+| Test C | 실제 `capture.graw`로 만든 프레임에 Burst 심볼 오류를 주입해 송신한다. |
+| Test D | 지정 간격 프레임의 SP를 훼손해 송신하고, 수신부가 payload 연속 심볼에서 다음 정상 SP를 재탐색한다. |
+| Test E | 정상 프레임의 UDP 데이터그램 복제본을 Seed 기반으로 제거한다. |
+
+Test B/C는 최종 RAW 무결성, Test D는 모든 논리 프레임 수신과 손상되지 않은 예상 프레임 수만큼의 SP 재탐색·복호, Test E는 실제 복원 결과를 기준으로 판정한다. 아래 내용은 RF 심볼 오류와 UDP 패킷 손실을 구분하기 위한 설계 배경이다.
+
 AFS Frame은 1 Frame 기준으로 다음과 같은 구조를 가진다.
 
 ```text

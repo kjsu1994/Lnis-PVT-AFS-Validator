@@ -13,7 +13,7 @@ public interface IAfsFrameCodec : IAsyncDisposable
     Task<AfsDecodedFrame> DecodeAsync(int toi, ReadOnlyMemory<byte> frame, CancellationToken token);
 }
 
-/// <summary>Test A/E UDP 송수신을 UI와 분리하는 역할별 세션 계약이다.</summary>
+/// <summary>Test A~E UDP 송수신을 UI와 분리하는 역할별 세션 계약이다.</summary>
 public interface IAfsSessionService
 {
     Task<AfsSessionResult> SendAsync(AfsSenderSettings settings, AfsTransportSettings transport, IProgress<AfsSessionProgress>? progress, CancellationToken token);

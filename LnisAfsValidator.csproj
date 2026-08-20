@@ -39,7 +39,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="readme.md"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
-    <Content Include="빠른실행.md"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Content Include="수동_인수시험.md"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
 </Project>

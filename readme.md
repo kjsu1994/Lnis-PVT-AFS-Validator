@@ -29,7 +29,8 @@ capture.graw
 → 인터리빙
 → 6000심볼 AFS 프레임
 → 750바이트 MSB-first 패킹
-→ UDP 송수신 또는 오류 주입
+→ 선택 시험의 오류 주입 또는 데이터그램 Drop
+→ UDP 송수신
 → 디인터리빙·LDPC 복호·CRC 검사
 → RAW 재조립
 → reconstructed.graw
@@ -38,7 +39,7 @@ capture.graw
 
 ## 프로그램 전체 동작 흐름
 
-프로그램을 실행하면 시작 화면에서 `송신부`, `수신부`, `오류정정 실험` 중 하나를 연다. GNSS COM 수집은 별도 역할이 아니라 송신부의 입력 방법 중 하나다. 송수신 시험은 수신부를 먼저 대기시킨 다음 송신부를 실행하며, 오류정정 실험은 네트워크 없이 한 PC 안에서 수행한다.
+프로그램을 실행하면 시작 화면에서 `송신부` 또는 `수신부`를 연다. 두 PC 중 송신 PC에서 Test A~E와 조건을 선택하고, 수신 PC는 시험 종류를 미리 설정하지 않은 채 `수신 대기`를 누른다. 송신부의 `SessionStart`가 시험 종류와 오류·드롭 조건을 전달하면 수신부가 이를 자동 표시하고 해당 복호·복구 경로를 적용한다. GNSS COM 수집은 별도 역할이 아니라 송신부의 입력 방법 중 하나다.
 
 ```text
 LNIS AFS Validator 실행
@@ -56,11 +57,14 @@ LNIS AFS Validator 실행
         │               └─ 등록 어댑터: capture.graw 생성·자동 적용 │
         │                  │                                       │
         │                  ▼                                       │
+        │       Test A~E 선택·시험 조건 설정                       │
+        │                  │                                       │
         │             AFS 프레임 생성                              │
         │        CRC-24Q → LDPC → 인터리빙                          │
         │                  │                                       │
         │                  ▼                                       │
         │       6000심볼을 750바이트로 패킹                         │
+        │     B/C 심볼 오류 · D SP 오류 주입                       │
         │                  │                                       │
         │                  ▼                                       │
         │        UDP Broadcast 데이터그램 전송 ─────────────────────┤
@@ -81,18 +85,6 @@ LNIS AFS Validator 실행
         │                                          │
         │                                          ▼
         │                              송신부·수신부 결과 화면/파일
-        │
-        └─ 오류정정 실험 ── 정상 AFS 프레임 생성
-                           │
-                           ├─ Random 심볼 반전(Test B)
-                           ├─ Burst 연속 심볼 반전(Test C)
-                           └─ SP 훼손·재동기(Test D)
-                                      │
-                                      ▼
-                          LDPC·CRC·복원/재동기 성공률 집계
-                                      │
-                                      ▼
-                              화면 표 + JSON + CSV
 ```
 
 ### 송신부 GNSS COM 입력의 실제 순서
@@ -118,24 +110,25 @@ LNIS AFS Validator 실행
 
 1. 수신 PC에서 수신부 창을 열고 데이터 포트와 결과 포트를 확인한 뒤 `수신 대기`를 누른다.
 2. 송신 PC에서 송신부 창을 열고 `capture.graw`, Broadcast 주소, 포트와 중복 송신 횟수를 설정한다.
-3. 송신부는 RAW 레코드를 SB3/SB4 Fragment로 나누고, 내부 검증 패턴으로 SB2를 구성한다.
-4. 각 SB에 CRC-24Q와 LDPC를 적용하고 SB2~SB4를 인터리빙하여 정확히 6000심볼의 AFS 프레임을 만든다.
-5. 6000개 이진 심볼을 MSB-first 750바이트로 패킹하고, AFS 프레임 하나를 UDP 데이터그램 하나의 payload로 Broadcast한다.
-6. 수신부는 동일 논리 프레임의 복제본을 제거하고, 750바이트 payload를 디인터리빙·LDPC 복호·CRC 검사한다.
-7. CRC를 통과한 SB3/SB4 Fragment로 원래 RAW 레코드를 조립하여 `reconstructed.graw`를 만든다.
-8. 원본과 복원 파일의 길이, 레코드 수, CRC32와 SHA-256을 비교해 Pass/Fail을 결정한다.
-9. 수신 결과를 송신부의 결과 포트로 유니캐스트하고 양쪽 화면과 JSON·CSV 파일에 기록한다.
+3. Test A~E 중 하나를 선택하고 오류 심볼 수, Seed, SP 손상 간격 또는 UDP Drop 조건을 입력한다. 선택한 시험에 해당하는 값만 적용된다.
+4. 송신부는 RAW 레코드를 SB3/SB4 Fragment로 나누고, 내부 검증 패턴으로 SB2를 구성한다.
+5. 각 SB에 CRC-24Q와 LDPC를 적용하고 SB2~SB4를 인터리빙하여 정확히 6000심볼의 AFS 프레임을 만든다.
+6. B/C는 payload 심볼, D는 지정 간격 프레임의 SP를 송신 직전에 반전한다. A/E의 AFS 프레임은 변경하지 않는다.
+7. 6000개 이진 심볼을 MSB-first 750바이트로 패킹하고, E만 Seed에 따라 Frame 데이터그램을 제거한 뒤 UDP Broadcast한다.
+8. 수신부는 SessionStart의 시험 조건을 자동 표시하고 동일 논리 프레임의 복제본을 제거한다. D는 수신 프레임을 연속 심볼로 이어 SP를 다시 검색하고, 나머지는 수신 프레임을 직접 복호한다.
+9. 디인터리빙·LDPC 복호·CRC 검사를 통과한 SB3/SB4 Fragment로 `reconstructed.graw`를 만든다.
+10. 원본과 복원 파일의 길이, 레코드 수, CRC32와 SHA-256을 비교하고 시험별 기준으로 Pass/Fail을 결정한다.
+11. 수신 결과를 송신부의 결과 포트로 유니캐스트하고 양쪽 화면과 JSON·CSV 파일에 기록한다.
 
-Test A는 송신부 Drop Rate를 0%로 실행한다. Test E는 같은 흐름에서 Frame 데이터그램 일부만 Seed 기반으로 의도적으로 제거하여, 중복 송신과 UDP 손실이 최종 RAW 복원에 미치는 영향을 측정한다.
+Test A는 정상 프레임을 그대로 전송한다. Test B/C는 실제 `capture.graw`에서 만든 모든 AFS 프레임에 Random/Burst 오류를 주입한다. Test D는 마지막 프레임을 제외한 지정 간격 프레임의 SP를 훼손하여 다음 정상 SP 재탐색을 검증한다. Test E는 Frame 데이터그램 일부만 Seed 기반으로 제거한다.
 
-### 오류정정 실험의 실제 순서
+### Test B/C/D 종단 간 복구의 실제 순서
 
-1. 프로그램이 네이티브 오픈소스 코덱으로 정상 AFS 기준 프레임을 생성한다.
-2. Test B는 인터리빙이 끝난 영역의 서로 다른 심볼을 지정 개수만큼 반전한다.
-3. Test C는 같은 영역에서 지정 길이의 연속 심볼을 반전한다.
-4. 오류 프레임을 디인터리빙하고 SB2·SB3·SB4를 각각 LDPC 복호한 뒤 CRC-24Q와 원본 비트를 비교한다.
-5. 오류 개수별 LDPC 성공률, CRC 통과율과 전체 복원률을 화면과 결과 파일에 집계한다.
-6. Test D는 정상·SP 손상·정상 프레임 스트림에서 손상 프레임 거부와 다음 정상 SP 재탐색·복호 성공률을 측정한다.
+1. 송신부가 실제 `capture.graw`로 정상 AFS 프레임을 생성한다.
+2. Test B는 SP/SB1을 제외한 영역의 서로 다른 심볼을, Test C는 연속 심볼을 지정 개수만큼 반전한 뒤 UDP로 전송한다.
+3. 수신부가 SB2·SB3·SB4를 LDPC 복호하고 CRC-24Q 통과 수, 정정 심볼 수와 RAW 복원 결과를 집계한다.
+4. Test D는 지정 간격 프레임의 SP를 훼손하여 보내고, 수신부는 UDP 경계를 프레임 경계로 쓰지 않고 수신 payload들을 이어 정확한 SP를 다시 찾는다.
+5. D는 모든 데이터그램 수신과 손상되지 않은 프레임 수만큼의 SP 재탐색·복호 성공을 Pass 기준으로 사용한다. 의도적으로 제외된 손상 프레임 때문에 전체 RAW 해시는 일치하지 않을 수 있다.
 
 이 실험의 오류는 RF 샘플 잡음이 아니라 AFS 디지털 심볼의 강제 반전이다. 따라서 결과는 CRC·LDPC·인터리빙과 프레임 동기 기능의 성능을 뜻하며 RF 수신 감도, Tracking 또는 PVT 성능을 뜻하지 않는다.
 
@@ -145,17 +138,12 @@ Test A는 송신부 Drop Rate를 0%로 실행한다. Test E는 같은 흐름에�
 
 프로그램 시작 시 `AfsDashboardWindow`에서 다음 독립 창을 선택한다.
 
-- `송신부`: 기존 `capture.graw` 파일을 선택하거나 같은 화면의 GNSS COM 탭에서 RAW를 수집한 뒤, 내부 SB2 검증 패턴과 함께 AFS 프레임을 만들어 UDP Broadcast한다. Drop Rate 0%는 Test A, 0% 초과는 Test E다.
-- `수신부`: 별도 입력 파일 없이 UDP를 대기하고 AFS 복호, RAW 복원, 무결성·성능 판정을 수행한다.
-- `오류정정 실험`: 네트워크와 분리된 Test B/C CRC·LDPC·인터리빙 성능과 Test D 재동기를 측정한다.
+- `송신부`: 기존 `capture.graw` 파일을 선택하거나 GNSS COM 탭에서 RAW를 수집하고 Test A~E와 조건을 선택한 뒤 AFS 프레임을 UDP Broadcast한다.
+- `수신부`: 별도 입력 파일이나 시험 선택 없이 UDP를 대기한다. SessionStart에서 시험 종류와 조건을 자동 인식하여 AFS 복호, SP 재탐색, RAW 복원과 판정을 수행한다.
 
 AFS 6000심볼은 MSB-first 750바이트로 패킹되며 한 AFS 프레임 전체가 한 UDP 데이터그램 payload에 들어간다. 운영 UI에는 Local 역할이 없고 루프백 종단간 경로는 자동 통합시험으로 검증한다.
 
 외부 알마낙 입력은 없다. 화면의 PRN 8은 UDP 패킷과 시험 세션에서 프레임을 구분하는 기본 논리 식별값이며, I/Q 생성이나 RF 위성 신호·PVT 계산을 뜻하지 않는다.
-
-### 오류 실험 전용 화면
-
-시작 화면에서 연다. 상단에 `CRC-24Q → LDPC 부호화·천공 → 인터리빙 → 오류 주입 → 디인터리빙 → LDPC 복호 → CRC·원본 비교` 단계와 각 블록 길이를 표시한다. 결과 표는 오류 심볼 수별 전체 복원률과 SB2·SB3·SB4 각각의 LDPC 성공률·CRC 통과율을 보여준다. Test E는 송신부 화면에서 설정한다.
 
 ## 3. Test A 정상 종단간 시험
 
@@ -191,22 +179,18 @@ AFS 6000심볼은 MSB-first 750바이트로 패킹되며 한 AFS 프레임 전�
 CRC·LDPC·인터리빙이 모두 끝난 정상 AFS 프레임에서 임의 심볼을 반전한다.
 
 ```text
-AFS Encode
+송신부 AFS Encode
 → 인터리빙 완료
 → Random 심볼 반전
-→ LDPC Decode
+→ UDP 송신
+→ 수신부 LDPC Decode
 → CRC-24Q 검사
-→ 원본 데이터 비교
+→ RAW 복원·원본 비교
 ```
 
 기본적으로 SP와 SB1을 제외한 심볼 `120~5999`에서 오류 위치를 선택한다. 오류 위치는 Seed와 반복 번호로 결정되어 같은 설정으로 재현할 수 있다.
 
-권장 조건:
-
-```text
-오류 개수: 1, 2, 5, 10, 20, 50
-조건별 반복: 100회 이상
-```
+오류 개수와 Seed를 바꾸려면 조건별로 송수신 시험을 다시 실행한다.
 
 측정 항목:
 
@@ -229,24 +213,24 @@ AFS Encode
 
 ## 6. Test D Sync Loss와 재동기
 
-Test D는 다음 3개 프레임을 하나의 스트림으로 만든다.
+Test D는 실제 송신 프레임 중 지정 간격의 프레임 SP를 훼손한다. 마지막 프레임은 다음 정상 SP가 없으므로 훼손하지 않는다.
 
 ```text
-Frame 0: 정상
-Frame 1: 68심볼 SP 일부 훼손
-Frame 2: 정상
+Frame 0: SP 훼손
+Frame 1: 정상
+...
+Frame N: 지정 간격에 따라 SP 훼손
+Frame Last: 정상
 ```
 
-동기 탐색기는 수신 시작 위치를 모른다고 가정하고 한 심볼씩 이동하며 68심볼 SP를 찾는다. 프레임 경계가 바이트 중간에 있어도 탐색할 수 있다.
+수신부는 UDP payload를 sequence 순으로 이어 붙이고 데이터그램 경계를 프레임 경계로 사용하지 않는다. 동기 탐색기는 한 심볼씩 이동하며 정확한 68심볼 SP를 찾는다.
 
 측정 항목:
 
-- 손상 프레임 거부율
-- 다음 SP 재탐색 성공률
-- 다음 정상 프레임 Decode 복구율
-- 복구 프레임 수
-- AFS 논리 복구시간
-- 재탐색된 스트림 비트 위치
+- 수신 논리 프레임 수
+- 정상 SP 재탐색 프레임 수
+- 다음 정상 프레임 Decode 복구 수
+- SB2/SB3/SB4 CRC 통과 수
 
 복구시간 계산:
 
@@ -366,7 +350,7 @@ LDPC 구현은 전역 상태를 사용하므로 DLL 호출은 프로세스 전�
 | NotApplicable | 현재 구성에서 측정할 수 없음 |
 | Inconclusive | 취소, DLL 누락 또는 시험 미완료 |
 
-Test B/C/D는 기본적으로 성공률을 측정하는 `Measured` 시험이다.
+Test B/C는 최종 RAW 무결성과 활성 임계값을 만족해야 Pass다. Test D는 모든 논리 프레임을 수신하고, 손상되지 않은 예상 프레임 수만큼 SP 재탐색과 Decode에 성공해야 Pass다.
 
 ## 11. 결과 파일
 
@@ -376,7 +360,7 @@ Test B/C/D는 기본적으로 성공률을 측정하는 `Measured` 시험이다.
 %LocalAppData%\LnisAfsValidator\Runs
 ```
 
-### Test A / Test E 수신 결과
+### Test A~E 수신 결과
 
 ```text
 reconstructed.graw
@@ -385,7 +369,7 @@ metrics-summary.csv
 metrics-timeseries.csv
 ```
 
-### Test A / Test E 송신 결과
+### Test A~E 송신 결과
 
 ```text
 result.json
@@ -393,47 +377,9 @@ metrics-summary.csv
 metrics-timeseries.csv
 ```
 
-### Test B / Test C
+모든 시험은 같은 결과 파일 형식을 사용한다. `metrics-summary.csv`에는 `DecodedFrames`, SB2/SB3/SB4 CRC 통과 프레임 수, `CorrectedSymbols`가 기록되며 Test D에는 `RecoveredSyncFrames`가 추가된다.
 
-```text
-fec-result.json
-fec-summary.csv
-fec-trials.csv
-reference-sb2.bits
-reference-sb3.bits
-reference-sb4.bits
-실험데이터_파일설명.txt
-frames/
-  Random-0001/ 또는 Burst-0005/
-    trial-0001-reference.afs
-    trial-0001-injected.afs
-    trial-0001-flipped-symbols.txt
-    trial-0001-decoded-sb2.bits
-    trial-0001-decoded-sb3.bits
-    trial-0001-decoded-sb4.bits
-```
-
-- `reference.afs`: 오류 주입 전 정상 750바이트 프레임
-- `injected.afs`: 실제 복호기에 입력한 오류 포함 프레임
-- `flipped-symbols.txt`: 반전한 0 기준 심볼 인덱스
-- `decoded-sb*.bits`: 복호기가 출력한 unpacked 0/1 배열
-
-### Test D
-
-```text
-sync-result.json
-sync-summary.csv
-sync-trials.csv
-실험데이터_파일설명.txt
-SyncLoss-20/
-  trial-0001-3frames.afsstream
-  trial-0001-damaged-reference.afs
-  trial-0001-damaged.afs
-  trial-0001-flipped-sync-symbols.txt
-  trial-0001-recovered.afs
-```
-
-`3frames.afsstream`은 정상·손상·정상 프레임을 연결한 2250바이트 파일이다.
+개발 회귀용 로컬 실험 서비스의 `fec-*`, `sync-*` 파일은 공식 송수신 UI에서 생성하지 않는다.
 
 ## 12. 성능지표
 
@@ -560,9 +506,9 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 - 다음 정상 프레임 Decode 복구
 - Seed 기반 UDP Drop 재현성
 
-현재 레거시 WSL/IQ 전용 테스트를 제거한 뒤 전체 자동 테스트는 28개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
+현재 전체 자동 테스트는 33개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
 
-실제 WPF 프로세스를 송신부와 수신부로 각각 실행한 인수시험에서도 임시 GNSS RAW 파일의 길이와 SHA-256이 복원 파일과 일치했다. Test E는 3회 중복 송신에서 계획된 데이터그램 1개를 제거하고도 복원에 성공했으며, Random/Burst/SyncLoss 화면 시험 결과도 JSON·CSV로 생성됨을 확인했다.
+로컬 UDP 통합시험에서 Test A의 RAW 복원, Test B/C의 실제 프레임 오류정정, Test D의 다음 정상 SP 재탐색과 Test E의 의도적 데이터그램 Drop 판정을 검증한다.
 
 ### 반복 가능한 화면 실행 인수
 
@@ -574,23 +520,26 @@ LnisAfsValidator.exe --receiver --auto-start --data-port=45821 --result-port=458
 LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --broadcast=255.255.255.255
 
 # 송신부 의도적 Drop(Test E)
-LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --drop-rate=10 --drop-seed=2
+LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --test=TestE_UdpDrop --drop-rate=10 --drop-seed=2
 
-# 로컬 오류정정 시험(Test B 예시)
-LnisAfsValidator.exe --experiment --auto-start --mode=Random --errors=1,5,20 --trials=100 --seed=2025
+# 송수신 Random 오류정정 시험(Test B 예시)
+LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --test=TestB_RandomErrors --errors=5 --seed=2025
+
+# 송수신 SP 재동기 시험(Test D 예시)
+LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --test=TestD_SyncRecovery --errors=2 --sync-interval=10 --seed=2025
 ```
 
 ## 16. 주요 코드
 
 ```text
 AfsDashboardWindow.xaml
-  송신부·수신부·오류정정 실험 시작 화면
+  송신부·수신부 시작 화면
 
 AfsDashboardViewModel.cs
   역할별 독립 창 실행
 
 Presentation/Sender/
-  Test A/E 송신 XAML과 ViewModel
+  Test A~E 선택·조건 설정과 송신 XAML·ViewModel
 
 Presentation/Receiver/
   AFS 수신·RAW 복원 XAML과 ViewModel
@@ -609,12 +558,6 @@ Infrastructure/Gnss/Protocols/GnssProtocolAdapters.cs
 
 Infrastructure/Gnss/Capture/GnssComCaptureService.cs
   원본 Serial 보존과 선택적 capture.graw 기록
-
-AfsErrorExperimentWindow.xaml
-  코덱 처리 사슬과 Test B/C/D 결과 표
-
-AfsErrorExperimentViewModel.cs
-  오류정정·재동기 로컬 반복시험 제어
 
 Core/Afs/ErrorCorrection/AfsErrorInjectionModels.cs
   오류 주입 설정과 결과
@@ -641,7 +584,7 @@ Infrastructure/Afs/Experiments/AfsPacketDropSimulator.cs
   Test E Seed 기반 데이터그램 제거 결정
 
 Infrastructure/Afs/Transport/AfsUdpSessionService.cs
-  정상 UDP 송수신과 Test E Frame Drop
+  Test A~E 오류 주입·UDP 송수신·복호·재동기·결과 반환
 
 Infrastructure/Afs/Codecs/AfsNativeCodec.cs
   DLL P/Invoke와 LDPC 상태 전달
@@ -656,7 +599,7 @@ Native/LnisAfsCodec/
 - `capture.graw` 생성에는 해당 장비 프로토콜을 해석하는 `IGnssDeviceProtocolAdapter` 구현이 필요하다.
 - PRN 8 단일 논리 AFS 스트림만 지원한다.
 - 수신기는 한 대만 지원한다.
-- Test D 복구시간은 2ms/symbol을 적용한 논리시간이다.
+- Test D는 손상 프레임 자체의 RAW를 복원하지 않고 다음 정상 SP와 프레임 복호 복귀를 판정한다.
 - RF 획득·Tracking 복귀시간은 측정하지 않는다.
 - PVT Solver가 없어 PVT 성공률과 위치·시간 오차를 측정하지 않는다.
 - HDTN/BPv7 라우팅과 재라우팅은 구현하지 않았다.

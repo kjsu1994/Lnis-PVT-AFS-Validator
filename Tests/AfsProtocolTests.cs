@@ -97,5 +97,80 @@ public sealed class AfsProtocolTests
         Assert.Equal(Verdict.Pass, sender.Verdict); Assert.True(received.Integrity.Success); Assert.Equal(await File.ReadAllBytesAsync(capture), await File.ReadAllBytesAsync(Path.Combine(received.ResultDirectory, "reconstructed.graw")));
     }
 
+    [Theory]
+    [InlineData(AfsEndToEndTestType.TestB_RandomErrors)]
+    [InlineData(AfsEndToEndTestType.TestC_BurstErrors)]
+    public async Task EndToEndSymbolErrorsAreCorrectedByReceiver(AfsEndToEndTestType testType)
+    {
+        var (sender, receiver) = await RunSessionAsync(testType, errorCount: 1, recordCount: 4);
+
+        Assert.Equal(Verdict.Pass, sender.Verdict);
+        Assert.True(receiver.Integrity.Success);
+        Assert.Equal(receiver.Counters.ExpectedLogicalFrames, receiver.Metrics.Single(x => x.Name == "DecodedFrames").Value);
+        Assert.True(receiver.Metrics.Single(x => x.Name == "CorrectedSymbols").Value > 0);
+    }
+
+    [Fact]
+    public async Task EndToEndSyncLossFindsTheFollowingNormalFrames()
+    {
+        var (sender, receiver) = await RunSessionAsync(AfsEndToEndTestType.TestD_SyncRecovery,
+            errorCount: 1, recordCount: 4, syncDamageInterval: 2);
+
+        Assert.Equal(Verdict.Pass, sender.Verdict);
+        Assert.Equal(Verdict.Pass, receiver.Verdict);
+        Assert.False(receiver.Integrity.Success);
+        Assert.True(receiver.Metrics.Single(x => x.Name == "RecoveredSyncFrames").Value > 0);
+    }
+
+    [Fact]
+    public async Task EndToEndUdpDropIsSelectedOnlyByTestE()
+    {
+        var (sender, receiver) = await RunSessionAsync(AfsEndToEndTestType.TestE_UdpDrop,
+            recordCount: 2, dropRate: 100, repeatCount: 1);
+
+        Assert.Equal(Verdict.Fail, sender.Verdict);
+        Assert.Equal(Verdict.Fail, receiver.Verdict);
+        Assert.Equal(100, sender.Metrics.Single(x => x.Name == "InjectedUdpDropRate").Value);
+        Assert.Equal(0, receiver.Counters.ReceivedLogicalFrames);
+    }
+
+    [Fact]
+    public async Task DropSettingsAreIgnoredUnlessTestEIsSelected()
+    {
+        var (sender, receiver) = await RunSessionAsync(AfsEndToEndTestType.TestA_Normal,
+            recordCount: 2, dropRate: 100, repeatCount: 1);
+
+        Assert.Equal(Verdict.Pass, sender.Verdict);
+        Assert.True(receiver.Integrity.Success);
+        Assert.Equal(0, sender.Metrics.Single(x => x.Name == "InjectedUdpDropRate").Value);
+    }
+
+    private static async Task<(AfsSessionResult Sender, AfsSessionResult Receiver)> RunSessionAsync(
+        AfsEndToEndTestType testType, int errorCount = 1, int recordCount = 1,
+        int syncDamageInterval = 10, double dropRate = 0, int repeatCount = 3)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "LnisAfsEndToEnd-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
+        var capture = Path.Combine(directory, "capture.graw"); var rawCodec = new GnssRawBinaryCodec();
+        await using (var stream = File.Create(capture))
+        {
+            for (var sequence = 0; sequence < recordCount; sequence++)
+            {
+                var envelope = new GnssRawEnvelope(1, Guid.NewGuid(), Guid.NewGuid(), checked((ulong)sequence), DateTimeOffset.UtcNow,
+                    new ObservationEpochMessage(345600 + sequence, 2300, 18, 1, 1, [new(GnssConstellation.Gps, 8, 0, 0, 123.5 + sequence, 45.25, -2, 100, 40, 1, 1, 1, 1)]));
+                var record = rawCodec.Encode(envelope); var size = new byte[4]; BinaryPrimitives.WriteUInt32BigEndian(size, checked((uint)record.Length));
+                await stream.WriteAsync(size); await stream.WriteAsync(record);
+            }
+        }
+        var dataPort = FreeUdpPort(); var resultPort = FreeUdpPort(); while (resultPort == dataPort) resultPort = FreeUdpPort();
+        var senderSettings = new AfsSenderSettings(capture, directory, TestType: testType, ErrorCount: errorCount, ErrorSeed: 7, SyncDamageInterval: syncDamageInterval);
+        var receiverSettings = new AfsReceiverSettings(directory);
+        var network = new AfsTransportSettings("127.0.0.1", dataPort, resultPort, repeatCount, ResultTimeoutSeconds: 10, SimulatedDropRatePercent: dropRate, SimulatedDropSeed: 9);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var receiverTask = new AfsUdpSessionService().ReceiveAsync(receiverSettings, network, null, timeout.Token);
+        await Task.Delay(100, timeout.Token);
+        var sender = await new AfsUdpSessionService().SendAsync(senderSettings, network, null, timeout.Token);
+        return (sender, await receiverTask);
+    }
+
     private static int FreeUdpPort() { using var socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)); return ((IPEndPoint)socket.Client.LocalEndPoint!).Port; }
 }

@@ -8,6 +8,16 @@ public enum PerformanceCategory { Network, Routing, Pvt, System, DataIntegrity }
 /// <summary>개별 성능 지표의 판정 또는 측정 상태다.</summary>
 public enum MetricStatus { Pass, Fail, Measured, NotApplicable }
 
+/// <summary>송신부가 선택하고 수신부가 자동으로 적용하는 AFS 종단 간 시험 종류다.</summary>
+public enum AfsEndToEndTestType
+{
+    TestA_Normal,
+    TestB_RandomErrors,
+    TestC_BurstErrors,
+    TestD_SyncRecovery,
+    TestE_UdpDrop
+}
+
 /// <summary>측정값에 적용할 최소 또는 최대 합격 기준을 나타낸다.</summary>
 public sealed record MetricThreshold(bool Enabled, double Value, bool IsMinimum);
 
@@ -40,6 +50,10 @@ public sealed record AfsSenderSettings(
     string ResultRoot,
     int Prn = 8,
     int CustomMessageType = 63,
+    AfsEndToEndTestType TestType = AfsEndToEndTestType.TestA_Normal,
+    int ErrorCount = 1,
+    int ErrorSeed = 1,
+    int SyncDamageInterval = 10,
     IReadOnlyDictionary<string, MetricThreshold>? Thresholds = null);
 
 /// <summary>수신부가 사용하는 저장 위치와 판정 기준이다. 송신 전용 입력 파일은 포함하지 않는다.</summary>

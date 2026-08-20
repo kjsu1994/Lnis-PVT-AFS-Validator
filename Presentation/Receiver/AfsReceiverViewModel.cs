@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
 using LnisAfsValidator.Core;
+using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
 
@@ -11,11 +12,13 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     private readonly IAfsSessionService sessionService;
     private CancellationTokenSource? cancellation;
     private string state = "Idle", verdict = "-", error = "", resultDirectory = "";
+    private string resultRoot = AppWorkspacePaths.DefaultRunsRoot;
     private string currentTest = "수신 대기", testConditions = "송신부의 SessionStart에서 자동으로 표시됩니다.";
     private double progress;
     public int DataPort { get; set; } = 45821;
     public int ResultPort { get; set; } = 45822;
     public int RepeatCount { get; set; } = 3;
+    public string ResultRoot { get => resultRoot; set => Set(ref resultRoot, value); }
     public bool ApplyDelivery { get; set; }
     public double MinimumDelivery { get; set; } = 99;
     public bool ApplyLoss { get; set; }
@@ -31,6 +34,7 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     public ObservableCollection<string> Logs { get; } = [];
     public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
+    public ICommand BrowseResultRootCommand { get; }
     public ICommand OpenResultsCommand { get; }
 
     public AfsReceiverViewModel(IAfsSessionService sessionService)
@@ -38,6 +42,7 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
         this.sessionService = sessionService;
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null);
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
+        BrowseResultRootCommand = new RelayCommand(BrowseResultRoot, () => cancellation is null);
         OpenResultsCommand = new RelayCommand(() => ResultFolderLauncher.Open(ResultDirectory), () => Directory.Exists(ResultDirectory));
         LoadSettings();
     }
@@ -54,7 +59,7 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
                 ["PacketDeliveryRate"] = new(ApplyDelivery, MinimumDelivery, true),
                 ["PacketLossRate"] = new(ApplyLoss, MaximumLoss, false)
             };
-            var receiver = new AfsReceiverSettings(RunRoot(), Thresholds: thresholds);
+            var receiver = new AfsReceiverSettings(ResultRoot, Thresholds: thresholds);
             var transport = new AfsTransportSettings(DataPort: DataPort, ResultPort: ResultPort, RepeatCount: RepeatCount);
             await SaveSettingsAsync();
             // 수신부 창이 열려 있는 동안 세션 하나가 끝나도 같은 포트로 다음 송신을 계속 기다린다.
@@ -76,15 +81,15 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
         finally { End(); }
     }
 
-    private void Validate() { if (DataPort is < 1 or > 65535 || ResultPort is < 1 or > 65535 || DataPort == ResultPort) throw new ArgumentException("데이터 포트와 결과 포트는 서로 다른 1~65535 값이어야 합니다."); if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다."); }
+    private void Validate() { if (DataPort is < 1 or > 65535 || ResultPort is < 1 or > 65535 || DataPort == ResultPort) throw new ArgumentException("데이터 포트와 결과 포트는 서로 다른 1~65535 값이어야 합니다."); if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다."); if (string.IsNullOrWhiteSpace(ResultRoot)) throw new ArgumentException("결과 저장 폴더를 선택하세요."); }
     private IProgress<AfsSessionProgress> Reporter() => new Progress<AfsSessionProgress>(p => { State = $"{p.Stage}: {p.Message}"; Progress = p.Percent; if (p.TestType is { } type) CurrentTest = type.ToString(); if (!string.IsNullOrWhiteSpace(p.TestConditions)) TestConditions = p.TestConditions; Logs.Add($"{DateTime.Now:HH:mm:ss} {p.Message}"); });
     private void Begin() { cancellation = new(); Error = ""; Verdict = "-"; Progress = 0; CurrentTest = "수신 대기"; TestConditions = "송신부의 SessionStart에서 자동으로 표시됩니다."; Metrics.Clear(); Logs.Clear(); RaiseCommands(); }
     private void End() { cancellation?.Dispose(); cancellation = null; RaiseCommands(); }
-    private void RaiseCommands() { (StartCommand as AsyncCommand)?.Raise(); (CancelCommand as RelayCommand)?.Raise(); (OpenResultsCommand as RelayCommand)?.Raise(); }
-    private static string RunRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "Runs");
+    private void RaiseCommands() { (StartCommand as AsyncCommand)?.Raise(); (CancelCommand as RelayCommand)?.Raise(); (BrowseResultRootCommand as RelayCommand)?.Raise(); (OpenResultsCommand as RelayCommand)?.Raise(); }
+    private void BrowseResultRoot() { var d = new OpenFolderDialog { Title = "수신 결과 저장 폴더", InitialDirectory = Directory.Exists(ResultRoot) ? ResultRoot : AppWorkspacePaths.DefaultWorkspaceRoot }; if (d.ShowDialog() == true) ResultRoot = d.FolderName; }
     private static string SettingsPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "receiver-settings.json");
-    private async Task SaveSettingsAsync() { Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath())!); await File.WriteAllTextAsync(SettingsPath(), JsonSerializer.Serialize(new Saved(DataPort, ResultPort, RepeatCount, ApplyDelivery, MinimumDelivery, ApplyLoss, MaximumLoss), JsonOptions)); }
-    private void LoadSettings() { try { if (File.Exists(SettingsPath())) { var x=JsonSerializer.Deserialize<Saved>(File.ReadAllText(SettingsPath())); if (x is null) return; DataPort=x.DataPort; ResultPort=x.ResultPort; RepeatCount=x.RepeatCount; ApplyDelivery=x.ApplyDelivery; MinimumDelivery=x.MinimumDelivery; ApplyLoss=x.ApplyLoss; MaximumLoss=x.MaximumLoss; return; } var legacy=LegacyAfsSettings.Load(); if (legacy is not { } old) return; DataPort=LegacyAfsSettings.Integer(old,"DataPort",DataPort); ResultPort=LegacyAfsSettings.Integer(old,"ResultPort",ResultPort); } catch (JsonException) { } }
+    private async Task SaveSettingsAsync() { Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath())!); await File.WriteAllTextAsync(SettingsPath(), JsonSerializer.Serialize(new Saved(DataPort, ResultPort, RepeatCount, ApplyDelivery, MinimumDelivery, ApplyLoss, MaximumLoss, ResultRoot), JsonOptions)); }
+    private void LoadSettings() { try { if (File.Exists(SettingsPath())) { var x=JsonSerializer.Deserialize<Saved>(File.ReadAllText(SettingsPath())); if (x is null) return; DataPort=x.DataPort; ResultPort=x.ResultPort; RepeatCount=x.RepeatCount; ApplyDelivery=x.ApplyDelivery; MinimumDelivery=x.MinimumDelivery; ApplyLoss=x.ApplyLoss; MaximumLoss=x.MaximumLoss; ResultRoot=AppWorkspacePaths.ResolveRunsRoot(x.ResultRoot); return; } var legacy=LegacyAfsSettings.Load(); if (legacy is not { } old) return; DataPort=LegacyAfsSettings.Integer(old,"DataPort",DataPort); ResultPort=LegacyAfsSettings.Integer(old,"ResultPort",ResultPort); } catch (JsonException) { } }
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private sealed record Saved(int DataPort, int ResultPort, int RepeatCount, bool ApplyDelivery, double MinimumDelivery, bool ApplyLoss, double MaximumLoss);
+    private sealed record Saved(int DataPort, int ResultPort, int RepeatCount, bool ApplyDelivery, double MinimumDelivery, bool ApplyLoss, double MaximumLoss, string? ResultRoot);
 }

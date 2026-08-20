@@ -47,6 +47,36 @@ public static class ResultFolderLauncher
     }
 }
 
+/// <summary>사용자가 선택할 수 있는 산출물 작업 폴더의 기본값과 기존 기본 경로 이전을 제공한다.</summary>
+public static class AppWorkspacePaths
+{
+    public static string DefaultWorkspaceRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        "LNIS AFS Validator");
+
+    public static string DefaultRunsRoot => Path.Combine(DefaultWorkspaceRoot, "Runs");
+    public static string DefaultCapturesRoot => Path.Combine(DefaultWorkspaceRoot, "Captures");
+
+    public static string ResolveRunsRoot(string? savedPath) =>
+        string.IsNullOrWhiteSpace(savedPath) ? DefaultRunsRoot : savedPath;
+
+    public static string ResolveCapturesRoot(string? savedPath)
+    {
+        if (string.IsNullOrWhiteSpace(savedPath)) return DefaultCapturesRoot;
+        var legacyDefault = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LnisAfsValidator",
+            "Captures");
+        return SamePath(savedPath, legacyDefault) ? DefaultCapturesRoot : savedPath;
+    }
+
+    private static bool SamePath(string left, string right) =>
+        string.Equals(
+            Path.TrimEndingDirectorySeparator(left),
+            Path.TrimEndingDirectorySeparator(right),
+            StringComparison.OrdinalIgnoreCase);
+}
+
 /// <summary>역할별 설정이 없을 때만 이전 단일 대시보드 설정을 읽는다.</summary>
 public static class LegacyAfsSettings
 {

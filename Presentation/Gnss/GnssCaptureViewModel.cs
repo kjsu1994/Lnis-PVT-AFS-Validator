@@ -17,7 +17,7 @@ public sealed class GnssCaptureViewModel : ObservableViewModel
     private int baudRate = 115200;
     private GnssProtocolDescriptor? selectedProtocol;
     private string protocolDescription = string.Empty;
-    private string outputRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "Captures");
+    private string outputRoot = AppWorkspacePaths.DefaultCapturesRoot;
     private string sessionName = "GNSS-Capture";
     private string receiverModel = "미지정 장비";
     private string firmwareVersion = "unknown";
@@ -139,12 +139,12 @@ public sealed class GnssCaptureViewModel : ObservableViewModel
         {
             if (!File.Exists(SettingsPath())) return;
             var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(SettingsPath())); if (saved is null) return;
-            SelectedPort = saved.PortName; BaudRate = saved.BaudRate; OutputRoot = saved.OutputRoot; SessionName = saved.SessionName;
+            SelectedPort = saved.PortName; BaudRate = saved.BaudRate; OutputRoot = AppWorkspacePaths.ResolveCapturesRoot(saved.OutputRoot); SessionName = saved.SessionName;
             ReceiverModel = saved.ReceiverModel; FirmwareVersion = saved.FirmwareVersion; DtrEnable = saved.DtrEnable; RtsEnable = saved.RtsEnable;
             SelectedProtocol = Protocols.FirstOrDefault(x => x.Id.Equals(saved.ProtocolId, StringComparison.OrdinalIgnoreCase));
         }
         catch (JsonException) { }
     }
 
-    private sealed record Saved(string PortName, int BaudRate, string ProtocolId, string OutputRoot, string SessionName, string ReceiverModel, string FirmwareVersion, bool DtrEnable, bool RtsEnable);
+    private sealed record Saved(string PortName, int BaudRate, string ProtocolId, string? OutputRoot, string SessionName, string ReceiverModel, string FirmwareVersion, bool DtrEnable, bool RtsEnable);
 }

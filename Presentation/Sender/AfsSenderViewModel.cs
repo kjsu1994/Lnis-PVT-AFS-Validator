@@ -12,12 +12,14 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     private readonly IAfsSessionService sessionService;
     private CancellationTokenSource? cancellation;
     private string capturePath = "", broadcastAddress = "255.255.255.255";
+    private string resultRoot = AppWorkspacePaths.DefaultRunsRoot;
     private string state = "Idle", verdict = "-", error = "", resultDirectory = "";
     private double progress, dropRate;
     private AfsEndToEndTestType selectedTest = AfsEndToEndTestType.TestA_Normal;
 
     public string CapturePath { get => capturePath; set => Set(ref capturePath, value); }
     public string BroadcastAddress { get => broadcastAddress; set => Set(ref broadcastAddress, value); }
+    public string ResultRoot { get => resultRoot; set => Set(ref resultRoot, value); }
     public int DataPort { get; set; } = 45821;
     public int ResultPort { get; set; } = 45822;
     public int RepeatCount { get; set; } = 3;
@@ -40,6 +42,7 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     public ICommand StartCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand BrowseCaptureCommand { get; }
+    public ICommand BrowseResultRootCommand { get; }
     public ICommand OpenResultsCommand { get; }
 
     public AfsSenderViewModel(
@@ -52,6 +55,7 @@ public sealed class AfsSenderViewModel : ObservableViewModel
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null);
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
         BrowseCaptureCommand = new RelayCommand(BrowseCapture, () => cancellation is null);
+        BrowseResultRootCommand = new RelayCommand(BrowseResultRoot, () => cancellation is null);
         OpenResultsCommand = new RelayCommand(() => ResultFolderLauncher.Open(ResultDirectory), () => Directory.Exists(ResultDirectory));
         LoadSettings();
     }
@@ -62,8 +66,7 @@ public sealed class AfsSenderViewModel : ObservableViewModel
         try
         {
             Validate();
-            var root = RunRoot();
-            var sender = new AfsSenderSettings(CapturePath, root, TestType: SelectedTest,
+            var sender = new AfsSenderSettings(CapturePath, ResultRoot, TestType: SelectedTest,
                 ErrorCount: ErrorCount, ErrorSeed: ErrorSeed, SyncDamageInterval: SyncDamageInterval);
             var transport = new AfsTransportSettings(BroadcastAddress, DataPort, ResultPort, RepeatCount,
                 ResultTimeoutSeconds: ResultTimeoutSeconds, SimulatedDropRatePercent: DropRatePercent, SimulatedDropSeed: DropSeed);
@@ -81,6 +84,7 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     private void Validate()
     {
         if (!File.Exists(CapturePath)) throw new FileNotFoundException("capture.graw 파일을 선택하세요.", CapturePath);
+        if (string.IsNullOrWhiteSpace(ResultRoot)) throw new ArgumentException("결과 저장 폴더를 선택하세요.");
         if (!System.Net.IPAddress.TryParse(BroadcastAddress, out _)) throw new ArgumentException("올바른 IPv4 Broadcast 주소를 입력하세요.");
         if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다.");
         if (DropRatePercent is < 0 or > 100) throw new ArgumentException("Drop Rate는 0~100% 범위여야 합니다.");
@@ -93,12 +97,12 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     private void Begin() { cancellation = new(); Error = ""; Verdict = "-"; Progress = 0; Metrics.Clear(); Logs.Clear(); RaiseCommands(); }
     private void End() { cancellation?.Dispose(); cancellation = null; RaiseCommands(); }
     private void Fail(Exception ex) { State = "Failed"; Verdict = Core.Verdict.Inconclusive.ToString(); Error = ex.Message; Logs.Add(ex.ToString()); }
-    private void RaiseCommands() { (StartCommand as AsyncCommand)?.Raise(); (CancelCommand as RelayCommand)?.Raise(); (BrowseCaptureCommand as RelayCommand)?.Raise(); (OpenResultsCommand as RelayCommand)?.Raise(); }
+    private void RaiseCommands() { (StartCommand as AsyncCommand)?.Raise(); (CancelCommand as RelayCommand)?.Raise(); (BrowseCaptureCommand as RelayCommand)?.Raise(); (BrowseResultRootCommand as RelayCommand)?.Raise(); (OpenResultsCommand as RelayCommand)?.Raise(); }
     private void BrowseCapture() { var d = new OpenFileDialog { Filter = "GNSS RAW (*.graw)|*.graw|All files (*.*)|*.*" }; if (d.ShowDialog() == true) CapturePath = d.FileName; }
-    private static string RunRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "Runs");
+    private void BrowseResultRoot() { var d = new OpenFolderDialog { Title = "송신 결과 저장 폴더", InitialDirectory = Directory.Exists(ResultRoot) ? ResultRoot : AppWorkspacePaths.DefaultWorkspaceRoot }; if (d.ShowDialog() == true) ResultRoot = d.FolderName; }
     private static string SettingsPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LnisAfsValidator", "sender-settings.json");
-    private async Task SaveSettingsAsync() { Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath())!); await File.WriteAllTextAsync(SettingsPath(), JsonSerializer.Serialize(new Saved(CapturePath, BroadcastAddress, DataPort, ResultPort, RepeatCount, ResultTimeoutSeconds, SelectedTest, ErrorCount, ErrorSeed, SyncDamageInterval, DropRatePercent, DropSeed), JsonOptions)); }
-    private void LoadSettings() { try { if (File.Exists(SettingsPath())) { var x = JsonSerializer.Deserialize<Saved>(File.ReadAllText(SettingsPath())); if (x is null) return; CapturePath=x.CapturePath; BroadcastAddress=x.BroadcastAddress; DataPort=x.DataPort; ResultPort=x.ResultPort; RepeatCount=x.RepeatCount; ResultTimeoutSeconds=x.ResultTimeoutSeconds; SelectedTest=x.SelectedTest; ErrorCount=x.ErrorCount > 0 ? x.ErrorCount : ErrorCount; ErrorSeed=x.ErrorSeed; SyncDamageInterval=x.SyncDamageInterval > 0 ? x.SyncDamageInterval : SyncDamageInterval; DropRatePercent=x.DropRatePercent; DropSeed=x.DropSeed; return; } var legacy=LegacyAfsSettings.Load(); if (legacy is not { } old) return; CapturePath=LegacyAfsSettings.Text(old,"CapturePath",CapturePath); BroadcastAddress=LegacyAfsSettings.Text(old,"BroadcastAddress",BroadcastAddress); DataPort=LegacyAfsSettings.Integer(old,"DataPort",DataPort); ResultPort=LegacyAfsSettings.Integer(old,"ResultPort",ResultPort); ResultTimeoutSeconds=LegacyAfsSettings.Integer(old,"ResultTimeoutSeconds",ResultTimeoutSeconds); } catch (JsonException) { } }
+    private async Task SaveSettingsAsync() { Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath())!); await File.WriteAllTextAsync(SettingsPath(), JsonSerializer.Serialize(new Saved(CapturePath, BroadcastAddress, DataPort, ResultPort, RepeatCount, ResultTimeoutSeconds, SelectedTest, ErrorCount, ErrorSeed, SyncDamageInterval, DropRatePercent, DropSeed, ResultRoot), JsonOptions)); }
+    private void LoadSettings() { try { if (File.Exists(SettingsPath())) { var x = JsonSerializer.Deserialize<Saved>(File.ReadAllText(SettingsPath())); if (x is null) return; CapturePath=x.CapturePath; BroadcastAddress=x.BroadcastAddress; DataPort=x.DataPort; ResultPort=x.ResultPort; RepeatCount=x.RepeatCount; ResultTimeoutSeconds=x.ResultTimeoutSeconds; SelectedTest=x.SelectedTest; ErrorCount=x.ErrorCount > 0 ? x.ErrorCount : ErrorCount; ErrorSeed=x.ErrorSeed; SyncDamageInterval=x.SyncDamageInterval > 0 ? x.SyncDamageInterval : SyncDamageInterval; DropRatePercent=x.DropRatePercent; DropSeed=x.DropSeed; ResultRoot=AppWorkspacePaths.ResolveRunsRoot(x.ResultRoot); return; } var legacy=LegacyAfsSettings.Load(); if (legacy is not { } old) return; CapturePath=LegacyAfsSettings.Text(old,"CapturePath",CapturePath); BroadcastAddress=LegacyAfsSettings.Text(old,"BroadcastAddress",BroadcastAddress); DataPort=LegacyAfsSettings.Integer(old,"DataPort",DataPort); ResultPort=LegacyAfsSettings.Integer(old,"ResultPort",ResultPort); ResultTimeoutSeconds=LegacyAfsSettings.Integer(old,"ResultTimeoutSeconds",ResultTimeoutSeconds); } catch (JsonException) { } }
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-    private sealed record Saved(string CapturePath, string BroadcastAddress, int DataPort, int ResultPort, int RepeatCount, int ResultTimeoutSeconds, AfsEndToEndTestType SelectedTest, int ErrorCount, int ErrorSeed, int SyncDamageInterval, double DropRatePercent, int DropSeed);
+    private sealed record Saved(string CapturePath, string BroadcastAddress, int DataPort, int ResultPort, int RepeatCount, int ResultTimeoutSeconds, AfsEndToEndTestType SelectedTest, int ErrorCount, int ErrorSeed, int SyncDamageInterval, double DropRatePercent, int DropSeed, string? ResultRoot);
 }

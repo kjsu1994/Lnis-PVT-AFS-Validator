@@ -91,7 +91,7 @@ LNIS AFS Validator 실행
 
 1. 송신부의 `GNSS COM에서 수집` 탭을 열고 Windows가 현재 인식한 COM 포트 목록에서 장비 포트를 선택한다.
 2. 장비를 새로 연결했다면 `새로고침`으로 COM1, COM2 등의 활성 포트 목록을 다시 조회한다. 필요하면 포트 이름을 직접 입력할 수도 있다.
-3. Baud rate, DTR/RTS와 저장 폴더를 설정하고, 장비 프로토콜이 아직 정해지지 않았다면 `원본 바이트 저장(프로토콜 미정)`을 선택한다.
+3. Baud rate, DTR/RTS와 저장 폴더를 설정하고, 장비 프로토콜이 아직 정해지지 않았다면 `원본 바이트 저장(프로토콜 미정)`을 선택한다. 캡처 기본 폴더는 `%UserProfile%\Documents\LNIS AFS Validator\Captures`이며 `찾기`로 변경할 수 있다.
 4. 수집 서비스가 선택한 `SerialPort`를 열고 들어오는 모든 바이트를 변경 없이 `serial-input.bin`에 기록한다.
 5. 선택된 `IGnssDeviceProtocolAdapter`에도 같은 바이트 조각을 전달한다. COM 읽기와 장비별 해석은 서로 의존하지 않는다.
 6. 어댑터가 `ObservationEpochMessage`, `NavigationUpdateMessage` 등을 반환할 수 있을 때만 정규화 `capture.graw`를 생성한다.
@@ -108,8 +108,8 @@ LNIS AFS Validator 실행
 
 ### 송수신 시험의 실제 순서
 
-1. 수신 PC에서 수신부 창을 연다. 저장된 데이터 포트와 결과 포트로 자동 수신 대기가 시작된다.
-2. 송신 PC에서 송신부 창을 열고 `capture.graw`, Broadcast 주소, 포트와 중복 송신 횟수를 설정한다.
+1. 수신 PC에서 수신부 창을 연다. 저장된 데이터 포트, 결과 포트와 결과 저장 폴더로 자동 수신 대기가 시작된다. 저장 폴더를 바꾸려면 `취소` 후 `찾기`로 폴더를 선택하고 `수신 대기`를 다시 누른다.
+2. 송신 PC에서 송신부 창을 열고 `capture.graw`, Broadcast 주소, 포트, 중복 송신 횟수와 결과 저장 폴더를 설정한다.
 3. Test A~E 중 하나를 선택하고 오류 심볼 수, Seed, SP 손상 간격 또는 UDP Drop 조건을 입력한다. 선택한 시험에 해당하는 값만 적용되며, 각 항목의 라벨이나 입력칸에 마우스를 올리면 적용 시험·범위·동작 설명이 표시된다.
 4. 송신부는 RAW 레코드를 SB3/SB4 Fragment로 나누고, 내부 검증 패턴으로 SB2를 구성한다.
 5. 각 SB에 CRC-24Q와 LDPC를 적용하고 SB2~SB4를 인터리빙하여 정확히 6000심볼의 AFS 프레임을 만든다.
@@ -381,11 +381,19 @@ Test B/C는 최종 RAW 무결성과 활성 임계값을 만족해야 Pass다. Te
 
 ## 11. 결과 파일
 
-기본 결과 위치:
+송신부와 수신부는 각각 `결과 저장 폴더`의 `찾기` 버튼으로 산출물 상위 폴더를 지정한다. 선택한 경로는 역할별 설정에 저장되어 다음 실행에도 유지된다. 기본 위치는 다음과 같다.
 
 ```text
-%LocalAppData%\LnisAfsValidator\Runs
+%UserProfile%\Documents\LNIS AFS Validator\Runs
 ```
+
+GNSS COM 수집 산출물의 기본 위치는 다음과 같다.
+
+```text
+%UserProfile%\Documents\LNIS AFS Validator\Captures
+```
+
+기존 버전의 기본 캡처 경로가 설정에 남아 있으면 새 기본 위치로 전환한다. 사용자가 직접 지정한 경로는 그대로 유지하며, 기존 `%LocalAppData%\LnisAfsValidator` 산출물을 이동하거나 삭제하지 않는다. `sender-settings.json`, `receiver-settings.json`, `gnss-capture-settings.json` 같은 소형 설정 파일만 계속 `%LocalAppData%\LnisAfsValidator`에 저장한다. 지정 경로를 사용할 수 없으면 다른 위치로 조용히 대체하지 않고 화면에 실패 원인을 표시한다.
 
 ### Test A~E 수신 결과
 
@@ -533,7 +541,7 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 - 다음 정상 프레임 Decode 복구
 - Seed 기반 UDP Drop 재현성
 
-현재 전체 자동 테스트는 34개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
+현재 전체 자동 테스트는 36개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다. 산출물 기본 경로와 기존 GNSS 기본 경로 마이그레이션도 회귀 시험에 포함한다.
 
 로컬 UDP 통합시험에서 Test A의 RAW 복원, Test B/C의 실제 프레임 오류정정, Test D의 다음 정상 SP 재탐색과 Test E의 의도적 데이터그램 Drop 판정을 검증한다.
 

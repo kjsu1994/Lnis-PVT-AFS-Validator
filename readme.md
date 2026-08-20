@@ -39,7 +39,7 @@ capture.graw
 
 ## 프로그램 전체 동작 흐름
 
-프로그램을 실행하면 시작 화면에서 `송신부` 또는 `수신부`를 연다. 두 PC 중 송신 PC에서 Test A~E와 조건을 선택하고, 수신 PC는 시험 종류를 미리 설정하지 않은 채 `수신 대기`를 누른다. 송신부의 `SessionStart`가 시험 종류와 오류·드롭 조건을 전달하면 수신부가 이를 자동 표시하고 해당 복호·복구 경로를 적용한다. GNSS COM 수집은 별도 역할이 아니라 송신부의 입력 방법 중 하나다.
+프로그램을 실행하면 시작 화면에서 `송신부` 또는 `수신부`를 연다. 수신부 창은 열리는 즉시 저장된 포트로 자동 수신 대기하며, 한 시험이 끝나면 마지막 결과를 화면에 유지한 채 다음 세션을 다시 기다린다. 송신부의 `SessionStart`가 시험 종류와 오류·드롭 조건을 전달하면 수신부가 이를 자동 표시하고 해당 복호·복구 경로를 적용한다. `취소` 후에는 `수신 대기` 버튼으로 수동 재시작할 수 있다. GNSS COM 수집은 별도 역할이 아니라 송신부의 입력 방법 중 하나다.
 
 ```text
 LNIS AFS Validator 실행
@@ -48,25 +48,25 @@ LNIS AFS Validator 실행
    시작 대시보드
         │
         ├─ 수신부 ───── UDP 포트 대기 ─────────────────────────────┐
-        │                                                          │
+        │                                                        │
         ├─ 송신부 ─┬─ 기존 capture.graw 파일 선택                   │
-        │          │                                               │
-        │          └─ GNSS COM 입력 탭                             │
-        │               ├─ 활성 COM 포트·Baud rate 선택             │
+        │          │                                             │
+        │          └─ GNSS COM 입력 탭                            │
+        │               ├─ 활성 COM 포트·Baud rate 선택            │
         │               ├─ 프로토콜 미정: serial-input.bin 보존     │
-        │               └─ 등록 어댑터: capture.graw 생성·자동 적용 │
-        │                  │                                       │
-        │                  ▼                                       │
-        │       Test A~E 선택·시험 조건 설정                       │
-        │                  │                                       │
+        │               └─ 등록 어댑터: capture.graw 생성·자동 적용  │
+        │                  │                                     │
+        │                  ▼                                     │
+        │       Test A~E 선택·시험 조건 설정                        │
+        │                  │                                     │
         │             AFS 프레임 생성                              │
-        │        CRC-24Q → LDPC → 인터리빙                          │
-        │                  │                                       │
-        │                  ▼                                       │
+        │        CRC-24Q → LDPC → 인터리빙                         │
+        │                  │                                     │
+        │                  ▼                                     │
         │       6000심볼을 750바이트로 패킹                         │
-        │     B/C 심볼 오류 · D SP 오류 주입                       │
-        │                  │                                       │
-        │                  ▼                                       │
+        │     B/C 심볼 오류 · D SP 오류 주입                        │
+        │                  │                                     │
+        │                  ▼                                     │
         │        UDP Broadcast 데이터그램 전송 ─────────────────────┤
         │                                                          ▼
         │                                              중복 제거·AFS 복호
@@ -108,9 +108,9 @@ LNIS AFS Validator 실행
 
 ### 송수신 시험의 실제 순서
 
-1. 수신 PC에서 수신부 창을 열고 데이터 포트와 결과 포트를 확인한 뒤 `수신 대기`를 누른다.
+1. 수신 PC에서 수신부 창을 연다. 저장된 데이터 포트와 결과 포트로 자동 수신 대기가 시작된다.
 2. 송신 PC에서 송신부 창을 열고 `capture.graw`, Broadcast 주소, 포트와 중복 송신 횟수를 설정한다.
-3. Test A~E 중 하나를 선택하고 오류 심볼 수, Seed, SP 손상 간격 또는 UDP Drop 조건을 입력한다. 선택한 시험에 해당하는 값만 적용된다.
+3. Test A~E 중 하나를 선택하고 오류 심볼 수, Seed, SP 손상 간격 또는 UDP Drop 조건을 입력한다. 선택한 시험에 해당하는 값만 적용되며, 각 항목의 라벨이나 입력칸에 마우스를 올리면 적용 시험·범위·동작 설명이 표시된다.
 4. 송신부는 RAW 레코드를 SB3/SB4 Fragment로 나누고, 내부 검증 패턴으로 SB2를 구성한다.
 5. 각 SB에 CRC-24Q와 LDPC를 적용하고 SB2~SB4를 인터리빙하여 정확히 6000심볼의 AFS 프레임을 만든다.
 6. B/C는 payload 심볼, D는 지정 간격 프레임의 SP를 송신 직전에 반전한다. A/E의 AFS 프레임은 변경하지 않는다.
@@ -310,6 +310,33 @@ SB4         1740심볼
 - LDPC·천공 후 각 1740심볼
 - 한 subframe의 실제 RAW payload 최대 86바이트
 
+### AFS 구현 출처와 현재 규격 적용 범위
+
+아래 표는 현재 프로그램에서 사용하는 AFS 처리 요소가 어디에서 왔으며, 실제 앱에서 어느 수준까지 구현되어 있는지를 구분한 것이다. 여기서 `오픈소스 기반`은 해당 오픈소스의 알고리즘이나 함수를 네이티브 코덱을 통해 사용한다는 뜻이며, LunaNet 표준 메시지의 실제 운용 데이터 내용까지 모두 구현되었다는 뜻은 아니다.
+
+| 구분 | 세부 항목 | 원형·출처 | 현재 프로그램의 실제 구현 | LunaNet AFS 규격 관점 |
+|---|---|---|---|---|
+| 프레임 구조 | 6000 symbol 프레임과 SP/SB1/SB2/SB3/SB4 배치 | LunaNet AFS 구조 및 AFS 오픈소스 | 68 + 52 + 2400 + 1740 + 1740 symbol로 프레임을 구성하고 MSB-first 750바이트로 패킹 | 물리적인 프레임 길이와 서브프레임 경계는 규격 구조를 따름 |
+| 동기 | 68-bit SP | AFS 오픈소스 기반 | 고정 SP를 프레임 앞에 삽입하고 수신 시 동일 패턴을 검색하여 Test D 재동기를 수행 | SP 구조 시험에 사용하며 RF 신호 추적 시험은 아님 |
+| SB1 | FID·TOI와 BCH 생성 | `LANS-AFS-SIM` | FID 0과 TOI를 넣고 `generate_BCH_AFS_SF1()`로 52 symbol SB1 생성 | SB1 부호화 구조는 오픈소스 구현을 사용 |
+| CRC | CRC-24Q 생성·검사 | `LANS-AFS-SIM` | SB2/SB3/SB4 데이터 뒤에 `append_CRC24()`로 CRC를 추가하고 수신 시 다시 검사 | CRC 알고리즘과 길이는 규격 구조에 맞춤 |
+| SB2 채널 부호화 | LDPC 행렬·부호화와 천공 | `LANS-AFS-SIM` | 1176 data bit와 24 CRC bit를 LDPC 부호화·천공하여 2400 symbol 생성 | 채널 부호화 구조는 오픈소스 기반 |
+| SB3/SB4 채널 부호화 | LDPC 행렬·부호화와 천공 | `LANS-AFS-SIM` | 각 846 data bit와 24 CRC bit를 LDPC 부호화·천공하여 각 1740 symbol 생성 | 채널 부호화 구조는 오픈소스 기반 |
+| LDPC 복호 | SB2/SB3/SB4 LDPC 복호 | `PocketSDR-AFS` | `sdr_decode_LDPC_AFS_SF2()`와 `sdr_decode_LDPC_AFS_SF3()`를 호출하고 복호 결과 및 변경 bit 수를 기록 | 오픈소스 복호기를 직접 연동 |
+| 천공 복원 | puncture 위치의 erasure 복원 | AFS 오픈소스 기반 | 송신 시 생략된 위치를 수신 네이티브 코덱이 erasure로 복원한 뒤 LDPC 복호 | 채널 복호 과정의 일부로 구현 |
+| 인터리빙 | SB2~SB4 60×98 인터리빙 | `LANS-AFS-SIM` | `interleave_AFS_SF234()`를 사용하고 수신 측에서 역인터리빙 후 각 SB를 분리 | 인터리빙 배열 구조는 오픈소스 기반 |
+| SB2 데이터 내용 | CED, ToT, Health/Safety, Time Conversion 영역 | 현재 앱 자체 시험 패턴 | `AfsSb2Builder`가 GPS Week·ITOW를 포함한 결정론적 검증 패턴 1176 bit를 생성 | 실제 MSG-G4/G8/G2/G30 비트 레이아웃은 아직 구현하지 않았으므로 운용 메시지 준수 상태가 아님 |
+| SB3/SB4 데이터 내용 | LunaNet Navigation Service Protocol 메시지 영역 | 현재 앱 자체 형식 | `.graw` 레코드를 조각내 SB3/SB4에 번갈아 적재하고 수신 측에서 재조립 | 표준 MSG-G* 메시지가 아니며, Custom Message로 사용하려면 제공자 SISICD 정의가 필요 |
+| 사용자 메시지 형식 | Type 63과 19바이트 fragment header | 현재 앱 자체 정의 | 세션·레코드·fragment 식별 정보, 길이 및 CRC32를 담아 최대 86바이트 RAW payload를 운반 | 프로젝트 내부 시험 형식으로서 타 LunaNet 구현과의 상호운용은 보장하지 않음 |
+| GNSS 입력 파일 | `capture.graw` / `reconstructed.graw` | 현재 앱 자체 형식 | `LGRW` 레코드를 길이-prefix 형식으로 저장하고 송수신 전후 CRC32·SHA-256을 비교 | LunaNet 표준 파일 형식이 아니라 앱 내부 검증용 컨테이너 |
+| 오류 시험 | Test A~E 오류 주입·Drop·재동기 | 현재 앱 자체 구현 | 정상 전송, Random/Burst symbol 오류, SP 손상, UDP datagram Drop을 송신부에서 선택해 수행 | 규격 적합성 인증 벡터가 아니라 현재 코덱과 전송 경로의 기능 시험 |
+| 전송 제어 | UDP 세션·결과 반환 프로토콜 | 현재 앱 자체 구현 | `SessionStart`, AFS frame, `SessionEnd`, 결과 packet을 별도 UDP 프로토콜로 교환 | AFS 무선 규격 자체가 아니며 두 PC 간 검증을 위한 시험 제어 계층 |
+| 인터페이스 문서 | Type 63·fragment header·`.graw`의 SISICD | 없음 | 코드와 본 README에 내부 형식만 설명되어 있음 | 외부 상호운용 또는 NASA 규격 준수를 주장하려면 별도 SISICD 작성과 통제된 시험 벡터 대조가 필요 |
+
+따라서 현재 구현은 **AFS 프레임 구조, CRC, LDPC, 천공 및 인터리빙 코덱을 오픈소스 기반으로 통합한 `.graw` 종단 간 전송·복구 시험기**로 보는 것이 정확하다. SB2의 실제 표준 메시지와 SB3/SB4의 표준 MSG-G* 내용을 완성한 운용용 LunaNet AFS 송수신기 또는 NASA 규격 적합성 인증 구현으로 보아서는 안 된다.
+
+완전한 규격 준수를 목표로 할 경우에는 SB2의 CED·ToT·Health/Safety·Time Conversion 비트 배치, SB3/SB4의 표준 메시지 레이아웃, Custom Message용 SISICD 및 규격 시험 벡터 대조를 별도 작업으로 완료해야 한다.
+
 ## 9. 네이티브 오픈소스 통합
 
 `LANS-AFS-SIM-main`과 `PocketSDR-AFS-main` 원본은 직접 수정하지 않는다. 프로젝트 소유 C ABI 래퍼를 `LnisAfsCodec.dll`로 빌드한다.
@@ -506,15 +533,15 @@ dotnet test Tests/LnisAfsValidator.Tests.csproj
 - 다음 정상 프레임 Decode 복구
 - Seed 기반 UDP Drop 재현성
 
-현재 전체 자동 테스트는 33개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
+현재 전체 자동 테스트는 34개이며 모두 통과한다. 네이티브 DLL이 없으면 코덱 통합시험은 건너뛰지 않고 실패한다.
 
 로컬 UDP 통합시험에서 Test A의 RAW 복원, Test B/C의 실제 프레임 오류정정, Test D의 다음 정상 SP 재탐색과 Test E의 의도적 데이터그램 Drop 판정을 검증한다.
 
 ### 반복 가능한 화면 실행 인수
 
 ```powershell
-# 수신부를 먼저 실행
-LnisAfsValidator.exe --receiver --auto-start --data-port=45821 --result-port=45822
+# 수신부를 먼저 실행하면 자동으로 수신 대기
+LnisAfsValidator.exe --receiver --data-port=45821 --result-port=45822
 
 # 송신부 정상 전송(Test A)
 LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --broadcast=255.255.255.255

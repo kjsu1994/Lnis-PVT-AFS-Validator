@@ -46,6 +46,7 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     private async Task StartAsync()
     {
         Begin();
+        var completedSession = false;
         try
         {
             Validate();
@@ -57,13 +58,22 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
             var receiver = new AfsReceiverSettings(RunRoot(), Thresholds: thresholds);
             var transport = new AfsTransportSettings(DataPort: DataPort, ResultPort: ResultPort, RepeatCount: RepeatCount);
             await SaveSettingsAsync();
-            var result = await sessionService.ReceiveAsync(receiver, transport, Reporter(), cancellation!.Token);
-            foreach (var metric in result.Metrics) Metrics.Add(metric);
-            ResultDirectory = result.ResultDirectory;
-            Verdict = result.Verdict.ToString(); State = "Completed"; Progress = 100;
+            // 수신부 창이 열려 있는 동안 세션 하나가 끝나도 같은 포트로 다음 송신을 계속 기다린다.
+            while (true)
+            {
+                State = completedSession ? "Waiting: 다음 송신 세션을 기다립니다." : "Waiting: 송신 세션을 기다립니다.";
+                Progress = 0;
+                var result = await sessionService.ReceiveAsync(receiver, transport, Reporter(), cancellation!.Token);
+                Metrics.Clear();
+                foreach (var metric in result.Metrics) Metrics.Add(metric);
+                ResultDirectory = result.ResultDirectory;
+                Verdict = result.Verdict.ToString();
+                completedSession = true;
+                RaiseCommands();
+            }
         }
-        catch (OperationCanceledException) { State = "Cancelled"; Verdict = Core.Verdict.Inconclusive.ToString(); }
-        catch (Exception ex) { State = "Failed"; Verdict = Core.Verdict.Inconclusive.ToString(); Error = ex.Message; Logs.Add(ex.ToString()); }
+        catch (OperationCanceledException) { State = "Cancelled"; if (!completedSession) Verdict = Core.Verdict.Inconclusive.ToString(); }
+        catch (Exception ex) { State = "Failed"; if (!completedSession) Verdict = Core.Verdict.Inconclusive.ToString(); Error = ex.Message; Logs.Add(ex.ToString()); }
         finally { End(); }
     }
 

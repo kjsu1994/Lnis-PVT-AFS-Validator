@@ -9,10 +9,12 @@ public sealed class AfsDashboardViewModel
     public ICommand OpenSenderCommand { get; }
     public ICommand OpenReceiverCommand { get; }
 
-    public AfsDashboardViewModel()
+    public AfsDashboardViewModel(
+        Func<AfsSenderWindow> senderWindowFactory,
+        Func<AfsReceiverWindow> receiverWindowFactory)
     {
-        OpenSenderCommand = new RelayCommand(() => Show(new AfsSenderWindow()));
-        OpenReceiverCommand = new RelayCommand(() => Show(new AfsReceiverWindow()));
+        OpenSenderCommand = new RelayCommand(() => Show(senderWindowFactory()));
+        OpenReceiverCommand = new RelayCommand(() => Show(receiverWindowFactory()));
     }
 
     private static void Show(Window window)

@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
 using LnisAfsValidator.Core;
-using LnisAfsValidator.Infrastructure;
 
 namespace LnisAfsValidator.App;
 
@@ -34,9 +33,9 @@ public sealed class AfsReceiverViewModel : ObservableViewModel
     public ICommand CancelCommand { get; }
     public ICommand OpenResultsCommand { get; }
 
-    public AfsReceiverViewModel(IAfsSessionService? sessionService = null)
+    public AfsReceiverViewModel(IAfsSessionService sessionService)
     {
-        this.sessionService = sessionService ?? new AfsUdpSessionService();
+        this.sessionService = sessionService;
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null);
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
         OpenResultsCommand = new RelayCommand(() => ResultFolderLauncher.Open(ResultDirectory), () => Directory.Exists(ResultDirectory));

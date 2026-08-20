@@ -558,7 +558,12 @@ LnisAfsValidator.exe --sender --auto-start --capture=C:\data\capture.graw --test
 
 ## 16. 주요 코드
 
+`App.xaml.cs`가 Composition Root로서 AFS·GNSS Infrastructure 구현을 생성하고 Core 인터페이스를 통해 ViewModel에 주입한다. Presentation의 ViewModel과 Window는 Infrastructure 구현을 직접 생성하지 않는다.
+
 ```text
+App.xaml.cs
+  AFS·GNSS 구현 생성과 ViewModel·Window 의존성 주입
+
 AfsDashboardWindow.xaml
   송신부·수신부 시작 화면
 
@@ -595,6 +600,9 @@ Core/Afs/ErrorCorrection/AfsErrorCorrectionExperimentModels.cs
 Core/Afs/Recovery/AfsSyncRecoveryModels.cs
   Test D 결과 모델
 
+Core/Afs/Protocol/AfsProtocolLimits.cs
+  Presentation과 Infrastructure가 공유하는 AFS 고정 한계값
+
 Infrastructure/Afs/Experiments/AfsErrorInjector.cs
   Random·Burst·SyncLoss 심볼 반전
 
@@ -610,8 +618,29 @@ Infrastructure/Afs/Synchronization/AfsSyncRecoveryExperimentService.cs
 Infrastructure/Afs/Experiments/AfsPacketDropSimulator.cs
   Test E Seed 기반 데이터그램 제거 결정
 
-Infrastructure/Afs/Transport/AfsUdpSessionService.cs
-  Test A~E 오류 주입·UDP 송수신·복호·재동기·결과 반환
+Infrastructure/Afs/Sessions/AfsSessionOrchestrator.cs
+  설정 검증과 송신·수신 세션 Handler 위임
+
+Infrastructure/Afs/Sessions/AfsSendSessionHandler.cs
+  SessionStart·Frame·SessionEnd 송신과 Result 수신 순서
+
+Infrastructure/Afs/Sessions/AfsReceiveSessionHandler.cs
+  패킷 수신·프레임 복호·RAW 복원과 Result 반환 순서
+
+Infrastructure/Afs/Frames/AfsFrameService.cs
+  RAW Fragment 구성, AFS 부호화·복호와 Test B/C/D 오류 주입
+
+Infrastructure/Afs/Transport/AfsUdpTransport.cs
+  UDP 패킷 송수신·복제·Drop과 중복 판정
+
+Infrastructure/Afs/Synchronization/AfsTimeSynchronizer.cs
+  송수신 PC 시각 교환과 시계 오프셋 계산
+
+Infrastructure/Afs/Evaluation/AfsTestEvaluator.cs
+  Test A~E 합격 조건과 성능지표 계산
+
+Infrastructure/Afs/Results/AfsResultWriter.cs
+  reconstructed.graw·result.json·CSV 저장
 
 Infrastructure/Afs/Codecs/AfsNativeCodec.cs
   DLL P/Invoke와 LDPC 상태 전달

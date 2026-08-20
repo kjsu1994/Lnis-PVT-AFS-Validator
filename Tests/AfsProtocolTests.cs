@@ -92,8 +92,8 @@ public sealed class AfsProtocolTests
         await using (var stream = File.Create(capture)) { await stream.WriteAsync(size); await stream.WriteAsync(record); }
         var dataPort = FreeUdpPort(); var resultPort = FreeUdpPort(); while (resultPort == dataPort) resultPort = FreeUdpPort();
         var senderSettings = new AfsSenderSettings(capture, directory); var receiverSettings = new AfsReceiverSettings(directory); var network = new AfsTransportSettings("127.0.0.1", dataPort, resultPort, ResultTimeoutSeconds: 10);
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)); var receiver = new AfsUdpSessionService().ReceiveAsync(receiverSettings, network, null, timeout.Token);
-        await Task.Delay(100, timeout.Token); var sender = await new AfsUdpSessionService().SendAsync(senderSettings, network, null, timeout.Token); var received = await receiver;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)); var receiver = CreateSessionService().ReceiveAsync(receiverSettings, network, null, timeout.Token);
+        await Task.Delay(100, timeout.Token); var sender = await CreateSessionService().SendAsync(senderSettings, network, null, timeout.Token); var received = await receiver;
         Assert.Equal(Verdict.Pass, sender.Verdict); Assert.True(received.Integrity.Success); Assert.Equal(await File.ReadAllBytesAsync(capture), await File.ReadAllBytesAsync(Path.Combine(received.ResultDirectory, "reconstructed.graw")));
     }
 
@@ -166,11 +166,18 @@ public sealed class AfsProtocolTests
         var receiverSettings = new AfsReceiverSettings(directory);
         var network = new AfsTransportSettings("127.0.0.1", dataPort, resultPort, repeatCount, ResultTimeoutSeconds: 10, SimulatedDropRatePercent: dropRate, SimulatedDropSeed: 9);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        var receiverTask = new AfsUdpSessionService().ReceiveAsync(receiverSettings, network, null, timeout.Token);
+        var receiverTask = CreateSessionService().ReceiveAsync(receiverSettings, network, null, timeout.Token);
         await Task.Delay(100, timeout.Token);
-        var sender = await new AfsUdpSessionService().SendAsync(senderSettings, network, null, timeout.Token);
+        var sender = await CreateSessionService().SendAsync(senderSettings, network, null, timeout.Token);
         return (sender, await receiverTask);
     }
+
+    private static IAfsSessionService CreateSessionService() =>
+        new AfsSessionOrchestrator(
+            new AfsFrameService(static () => new AfsNativeCodec()),
+            new AfsTimeSynchronizer(),
+            new AfsTestEvaluator(),
+            new AfsResultWriter());
 
     private static int FreeUdpPort() { using var socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0)); return ((IPEndPoint)socket.Client.LocalEndPoint!).Port; }
 }

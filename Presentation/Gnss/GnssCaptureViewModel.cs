@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
 using LnisAfsValidator.Core;
-using LnisAfsValidator.Infrastructure;
 using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
@@ -32,11 +31,14 @@ public sealed class GnssCaptureViewModel : ObservableViewModel
     private string canonicalPath = string.Empty;
     private GnssCaptureStatistics statistics = new(0, 0, 0, 0, 0, 0, 0, 0);
 
-    public GnssCaptureViewModel(IGnssCaptureService? captureService = null, IGnssSerialPortCatalog? portCatalog = null, IGnssProtocolAdapterCatalog? protocolCatalog = null)
+    public GnssCaptureViewModel(
+        IGnssCaptureService captureService,
+        IGnssSerialPortCatalog portCatalog,
+        IGnssProtocolAdapterCatalog protocolCatalog)
     {
-        this.protocolCatalog = protocolCatalog ?? new GnssProtocolAdapterCatalog();
-        this.captureService = captureService ?? new GnssComCaptureService(protocolCatalog: this.protocolCatalog);
-        this.portCatalog = portCatalog ?? new SystemGnssSerialPortCatalog();
+        this.protocolCatalog = protocolCatalog;
+        this.captureService = captureService;
+        this.portCatalog = portCatalog;
         Protocols = new(this.protocolCatalog.Protocols);
         BaudRates = [9600, 38400, 57600, 115200, 230400, 460800, 921600];
         RefreshPortsCommand = new RelayCommand(RefreshPorts, () => !IsBusy);

@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Windows.Input;
 using LnisAfsValidator.Core;
-using LnisAfsValidator.Infrastructure;
 using Microsoft.Win32;
 
 namespace LnisAfsValidator.App;
@@ -43,10 +42,12 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     public ICommand BrowseCaptureCommand { get; }
     public ICommand OpenResultsCommand { get; }
 
-    public AfsSenderViewModel(IAfsSessionService? sessionService = null, GnssCaptureViewModel? gnssCapture = null)
+    public AfsSenderViewModel(
+        IAfsSessionService sessionService,
+        GnssCaptureViewModel gnssCapture)
     {
-        this.sessionService = sessionService ?? new AfsUdpSessionService();
-        GnssCapture = gnssCapture ?? new GnssCaptureViewModel();
+        this.sessionService = sessionService;
+        GnssCapture = gnssCapture;
         GnssCapture.CanonicalCaptureReady += (_, path) => CapturePath = path;
         StartCommand = new AsyncCommand(StartAsync, () => cancellation is null);
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => cancellation is not null);
@@ -83,8 +84,8 @@ public sealed class AfsSenderViewModel : ObservableViewModel
         if (!System.Net.IPAddress.TryParse(BroadcastAddress, out _)) throw new ArgumentException("올바른 IPv4 Broadcast 주소를 입력하세요.");
         if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다.");
         if (DropRatePercent is < 0 or > 100) throw new ArgumentException("Drop Rate는 0~100% 범위여야 합니다.");
-        if (SelectedTest is AfsEndToEndTestType.TestB_RandomErrors or AfsEndToEndTestType.TestC_BurstErrors && ErrorCount is < 1 or > 5880) throw new ArgumentException("Test B/C 오류 개수는 1~5880 범위여야 합니다.");
-        if (SelectedTest == AfsEndToEndTestType.TestD_SyncRecovery && ErrorCount is < 1 or > AfsErrorInjector.SyncSymbolCount) throw new ArgumentException("Test D SP 오류 개수는 1~68 범위여야 합니다.");
+        if (SelectedTest is AfsEndToEndTestType.TestB_RandomErrors or AfsEndToEndTestType.TestC_BurstErrors && ErrorCount is < 1 or > AfsProtocolLimits.SubframePayloadSymbolCount) throw new ArgumentException("Test B/C 오류 개수는 1~5880 범위여야 합니다.");
+        if (SelectedTest == AfsEndToEndTestType.TestD_SyncRecovery && ErrorCount is < 1 or > AfsProtocolLimits.SyncPatternSymbolCount) throw new ArgumentException("Test D SP 오류 개수는 1~68 범위여야 합니다.");
         if (SyncDamageInterval < 1) throw new ArgumentException("Test D 손상 간격은 1 이상이어야 합니다.");
     }
 

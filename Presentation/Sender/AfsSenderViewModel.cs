@@ -15,6 +15,7 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     private string resultRoot = AppWorkspacePaths.DefaultRunsRoot;
     private string state = "Idle", verdict = "-", error = "", resultDirectory = "";
     private double progress, dropRate;
+    private bool isErrorInputEnabled, isSyncInputEnabled, isDropInputEnabled;
     private AfsEndToEndTestType selectedTest = AfsEndToEndTestType.TestA_Normal;
 
     public string CapturePath { get => capturePath; set => Set(ref capturePath, value); }
@@ -25,7 +26,23 @@ public sealed class AfsSenderViewModel : ObservableViewModel
     public int RepeatCount { get; set; } = 3;
     public int ResultTimeoutSeconds { get; set; } = 30;
     public IReadOnlyList<AfsEndToEndTestType> TestTypes { get; } = Enum.GetValues<AfsEndToEndTestType>();
-    public AfsEndToEndTestType SelectedTest { get => selectedTest; set => Set(ref selectedTest, value); }
+    public AfsEndToEndTestType SelectedTest
+    {
+        get => selectedTest;
+        set
+        {
+            if (!Set(ref selectedTest, value)) return;
+            // 선택한 종단 간 시험에서 실제로 사용하는 입력만 활성화한다.
+            IsErrorInputEnabled = value is AfsEndToEndTestType.TestB_RandomErrors
+                or AfsEndToEndTestType.TestC_BurstErrors
+                or AfsEndToEndTestType.TestD_SyncRecovery;
+            IsSyncInputEnabled = value == AfsEndToEndTestType.TestD_SyncRecovery;
+            IsDropInputEnabled = value == AfsEndToEndTestType.TestE_UdpDrop;
+        }
+    }
+    public bool IsErrorInputEnabled { get => isErrorInputEnabled; private set => Set(ref isErrorInputEnabled, value); }
+    public bool IsSyncInputEnabled { get => isSyncInputEnabled; private set => Set(ref isSyncInputEnabled, value); }
+    public bool IsDropInputEnabled { get => isDropInputEnabled; private set => Set(ref isDropInputEnabled, value); }
     public int ErrorCount { get; set; } = 1;
     public int ErrorSeed { get; set; } = 1;
     public int SyncDamageInterval { get; set; } = 10;
@@ -87,10 +104,10 @@ public sealed class AfsSenderViewModel : ObservableViewModel
         if (string.IsNullOrWhiteSpace(ResultRoot)) throw new ArgumentException("결과 저장 폴더를 선택하세요.");
         if (!System.Net.IPAddress.TryParse(BroadcastAddress, out _)) throw new ArgumentException("올바른 IPv4 Broadcast 주소를 입력하세요.");
         if (RepeatCount is < 1 or > 20) throw new ArgumentException("중복 송신 횟수는 1~20 범위여야 합니다.");
-        if (DropRatePercent is < 0 or > 100) throw new ArgumentException("Drop Rate는 0~100% 범위여야 합니다.");
+        if (SelectedTest == AfsEndToEndTestType.TestE_UdpDrop && DropRatePercent is < 0 or > 100) throw new ArgumentException("Drop Rate는 0~100% 범위여야 합니다.");
         if (SelectedTest is AfsEndToEndTestType.TestB_RandomErrors or AfsEndToEndTestType.TestC_BurstErrors && ErrorCount is < 1 or > AfsProtocolLimits.SubframePayloadSymbolCount) throw new ArgumentException("Test B/C 오류 개수는 1~5880 범위여야 합니다.");
         if (SelectedTest == AfsEndToEndTestType.TestD_SyncRecovery && ErrorCount is < 1 or > AfsProtocolLimits.SyncPatternSymbolCount) throw new ArgumentException("Test D SP 오류 개수는 1~68 범위여야 합니다.");
-        if (SyncDamageInterval < 1) throw new ArgumentException("Test D 손상 간격은 1 이상이어야 합니다.");
+        if (SelectedTest == AfsEndToEndTestType.TestD_SyncRecovery && SyncDamageInterval < 1) throw new ArgumentException("Test D 손상 간격은 1 이상이어야 합니다.");
     }
 
     private IProgress<AfsSessionProgress> Reporter() => new Progress<AfsSessionProgress>(p => { State = $"{p.Stage}: {p.Message}"; Progress = p.Percent; Logs.Add($"{DateTime.Now:HH:mm:ss} {p.Message}"); });

@@ -58,13 +58,13 @@ typedef struct
     double sq1e2; // sqrt(1-e^2)
 
 } ephem_t;
-
+// PVT요구 관측값
 typedef struct
 {
-    gpstime_t g;
-    int nsat;
-    int prn[MAX_SAT];
-    double range[MAX_SAT];
+    gpstime_t g; // 관측 시각
+    int nsat; // 위성 수
+    int prn[MAX_SAT]; // 위성 번호
+    double range[MAX_SAT]; // Pseudorange
 } obsrv_t;
 
 // Global variables
